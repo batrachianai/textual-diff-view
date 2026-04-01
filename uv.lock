@@ -102,7 +102,7 @@ wheels = [
 
 [[package]]
 name = "textual-diff-view"
-version = "0.1.0a0"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "textual" },
