@@ -1,0 +1,20 @@
+[project]
+name = "textual-diff-view"
+version = "0.1.0a0"
+description = "Beautiful Diff view widget for Textual applications"
+homepage = "https://github.com/batrachianai/textual-diff-view"
+repository = "https://github.com/batrachianai/textual-diff-view"
+documentation = "https://github.com/batrachianai/textual-diff-view"
+
+readme = "README.md"
+authors = [
+    { name = "Will McGugan", email = "willmcgugan@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "textual>=8.2.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
