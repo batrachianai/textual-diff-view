@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import difflib
 from itertools import starmap
+from os import PathLike
+from pathlib import Path
 from typing import Iterable, Literal
 
 from rich.segment import Segment
@@ -30,8 +32,13 @@ from textual._loop import loop_last
 type Annotation = Literal["+", "-", "/", " "]
 
 
+class LoadError(Exception):
+    """Raised when DiffView.load fails in loading code."""
+
+
 class Ellipsis(Static):
     """A non selectable Static for the ellipsis."""
+
     ALLOW_SELECT = False
 
 
@@ -208,14 +215,15 @@ def fill_lists[T](list_a: list[T], list_b: list[T], fill_value: T) -> None:
 class DiffView(containers.VerticalGroup):
     """A formatted diff in unified or split format."""
 
-    code_before: reactive[str] = reactive("")
-    """The before code."""
-    code_after: reactive[str] = reactive("")
-    """The after code."""
-    path1: reactive[str] = reactive("")
-    """Path for the before code."""
-    path2: reactive[str] = reactive("")
-    """Path for the after code."""
+    path_original: reactive[str] = reactive("")
+    """Path for the original code."""
+    path_modified: reactive[str] = reactive("")
+    """Path for the modified code."""
+    code_original: reactive[str] = reactive("")
+    """The original code."""
+    code_modified: reactive[str] = reactive("")
+    """The modified code."""
+
     split: reactive[bool] = reactive(True, recompose=True)
     """Enable split view?"""
     annotations: var[bool] = var(False, toggle_class="-with-annotations")
@@ -254,11 +262,7 @@ class DiffView(containers.VerticalGroup):
         " ": "$foreground 30% on $foreground 3%",
     }
     """Line number styles."""
-    ANNOTATION_STYLES = {
-        "+": "bold $text-success", 
-        "-": "bold $text-error",
-        " ": ""
-    }
+    ANNOTATION_STYLES = {"+": "bold $text-success", "-": "bold $text-error", " ": ""}
     """Annotation styles (+ or -)."""
     LINE_STYLES = {
         "+": "on $success 10%",
@@ -276,10 +280,10 @@ class DiffView(containers.VerticalGroup):
 
     def __init__(
         self,
-        path1: str,
-        path2: str,
-        code_before: str,
-        code_after: str,
+        path_original: str,
+        path_modified: str,
+        code_original: str,
+        code_modified: str,
         *,
         name: str | None = None,
         id: str | None = None,
@@ -287,12 +291,62 @@ class DiffView(containers.VerticalGroup):
         disabled: bool = False,
     ):
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)
-        self.set_reactive(DiffView.path1, path1)
-        self.set_reactive(DiffView.path2, path2)
-        self.set_reactive(DiffView.code_before, code_before.expandtabs())
-        self.set_reactive(DiffView.code_after, code_after.expandtabs())
+        self.set_reactive(DiffView.path_original, path_original)
+        self.set_reactive(DiffView.path_modified, path_modified)
+        self.set_reactive(DiffView.code_original, code_original.expandtabs())
+        self.set_reactive(DiffView.code_modified, code_modified.expandtabs())
+
         self._grouped_opcodes: list[list[tuple[str, int, int, int, int]]] | None = None
         self._highlighted_code_lines: tuple[list[Content], list[Content]] | None = None
+
+    @classmethod
+    async def load(
+        cls, path_original: str | PathLike, path_modified: str | PathLike
+    ) -> DiffView:
+        """Load two files from disk.
+
+        This is a helper for diffing two files on disk.
+
+        Args:
+            path_original: A str or Path to the original file.
+            path_modified: A str or Path to the modified file.
+
+        Raises:
+            OSError: If the file could not be loaded.
+
+        Returns:
+            A DiffView widget instance.
+        """
+        original = Path(path_original)
+        modified = Path(path_modified)
+
+        def read(path: Path) -> str:
+            """Read from a path.
+
+            Args:
+                path: Path to a text file.
+
+            Returns:
+                The contents of `path`.
+            """
+            try:
+                return path.read_text("utf-8")
+            except OSError as error:
+                raise LoadError(f"Unabled to load {path!s}; {error}")
+
+        original_code = await asyncio.to_thread(read, original)
+        modified_code = await asyncio.to_thread(read, modified)
+
+        diff_view = DiffView(
+            str(original),
+            str(modified),
+            original_code,
+            modified_code,
+        )
+
+        await diff_view.prepare()
+
+        return diff_view
 
     async def prepare(self) -> None:
         """Do CPU work in a thread.
@@ -313,8 +367,8 @@ class DiffView(containers.VerticalGroup):
     @property
     def grouped_opcodes(self) -> list[list[tuple[str, int, int, int, int]]]:
         if self._grouped_opcodes is None:
-            text_lines_a = self.code_before.splitlines()
-            text_lines_b = self.code_after.splitlines()
+            text_lines_a = self.code_original.splitlines()
+            text_lines_b = self.code_modified.splitlines()
             sequence_matcher = difflib.SequenceMatcher(
                 lambda character: character in {" ", "\t"},
                 text_lines_a,
@@ -382,22 +436,22 @@ class DiffView(containers.VerticalGroup):
         """
 
         if self._highlighted_code_lines is None:
-            language1 = highlight.guess_language(self.code_before, self.path1)
-            language2 = highlight.guess_language(self.code_after, self.path2)
-            text_lines_a = self.code_before.splitlines()
-            text_lines_b = self.code_after.splitlines()
+            language1 = highlight.guess_language(self.code_original, self.path_original)
+            language2 = highlight.guess_language(self.code_modified, self.path_modified)
+            text_lines_a = self.code_original.splitlines()
+            text_lines_b = self.code_modified.splitlines()
 
             code_a = highlight.highlight(
-                "\n".join(text_lines_a), language=language1, path=self.path1
+                "\n".join(text_lines_a), language=language1, path=self.path_original
             )
             code_b = highlight.highlight(
-                "\n".join(text_lines_b), language=language2, path=self.path2
+                "\n".join(text_lines_b), language=language2, path=self.path_modified
             )
 
             lines_a = code_a.split("\n")
             lines_b = code_b.split("\n")
 
-            if self.code_before:
+            if self.code_original:
                 for group in self.grouped_opcodes:
                     for tag, i1, i2, j1, j2 in group:
                         # Show character level diff only when there is the same number of lines
@@ -422,7 +476,7 @@ class DiffView(containers.VerticalGroup):
         additions, removals = self.counts
         title = Content.from_markup(
             "📄 [dim]$path[/dim] ([$text-success][b]+$additions[/b][/], [$text-error][b]-$removals[/b][/])",
-            path=self.path2,
+            path=self.path_modified,
             additions=additions,
             removals=removals,
             additions_label="addition" if additions == 1 else "additions",
@@ -681,103 +735,3 @@ class DiffView(containers.VerticalGroup):
                 with containers.HorizontalGroup():
                     yield Ellipsis("⋮")
                     yield Ellipsis("⋮")
-
-
-if __name__ == "__main__":
-    SOURCE1 = '''\
-def loop_first(values: Iterable[T]) -> Iterable[tuple[bool, T]]:
-\t"""Iterate and generate a tuple with a flag for first value."""
-\titer_values = iter(values)
-    try:
-        value = next(iter_values)
-    except StopIteration:
-        return
-    yield True, value
-    for value in iter_values:
-        yield False, value
-
-
-def loop_first_last(values: Iterable[T]) -> Iterable[tuple[bool, T]]:
-    """Iterate and generate a tuple with a flag for first and last value."""
-    iter_values = iter(values)
-    try:
-        previous_value = next(iter_values)
-    except StopIteration:
-        return
-    first = True
-    for value in iter_values:
-        yield first, False, previous_value
-        first = False
-        previous_value = value
-    yield first, True, previous_value
-
-'''
-
-    SOURCE2 = '''\
-def loop_first(values: Iterable[T]) -> Iterable[tuple[bool, T]]:
-    """Iterate and generate a tuple with a flag for first value.
-    
-    Args:
-        values: iterables of values.
-
-    Returns:
-        Iterable of a boolean to indicate first value, and a value from the iterable.
-    """
-    iter_values = iter(values)
-    try:
-        value = next(iter_values)
-    except StopIteration:
-        return
-    yield True, value
-    for value in iter_values:
-        yield False, value
-
-
-def loop_last(values: Iterable[T]) -> Iterable[tuple[bool, bool, T]]:
-    """Iterate and generate a tuple with a flag for last value."""
-    iter_values = iter(values)
-    try:
-        previous_value = next(iter_values)
-    except StopIteration:
-        return
-    for value in iter_values:
-        yield False, previous_value
-        previous_value = value
-    yield True, previous_value
-
-
-def loop_first_last(values: Iterable[ValueType]) -> Iterable[tuple[bool, bool, ValueType]]:
-    """Iterate and generate a tuple with a flag for first and last value."""
-    iter_values = iter(values)
-    try:
-        previous_value = next(iter_values)  # Get previous value
-    except StopIteration:
-        return
-    first = True
-
-'''
-    from textual.app import App
-    from textual.widgets import Footer
-    from textual import containers
-
-    class DiffApp(App):
-        BINDINGS = [
-            ("space", "split", "Toggle split"),
-            ("a", "toggle_annotations", "Toggle annotations"),
-        ]
-
-        def compose(self) -> ComposeResult:
-            with containers.VerticalScroll():
-                yield DiffView("foo.py", "foo.py", SOURCE1, SOURCE2)
-            yield Footer()
-
-        def action_split(self) -> None:
-            self.query_one(DiffView).split = not self.query_one(DiffView).split
-
-        def action_toggle_annotations(self) -> None:
-            self.query_one(DiffView).annotations = not self.query_one(
-                DiffView
-            ).annotations
-
-    app = DiffApp()
-    app.run()
