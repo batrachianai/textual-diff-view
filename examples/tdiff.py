@@ -18,8 +18,8 @@ class DiffApp(App):
     annotations = var(True)
 
     def __init__(self, original: str, modified: str) -> None:
-        self.path_original = original
-        self.path_modified = modified
+        self.original = original
+        self.modified = modified
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -28,7 +28,7 @@ class DiffApp(App):
 
     async def on_mount(self) -> None:
         try:
-            diff_view = await DiffView.load(self.path_original, self.path_modified)
+            diff_view = await DiffView.load(self.original, self.modified)
         except LoadError as error:
             self.notify(str(error), title="Failed to load code", severity="error")
         else:
