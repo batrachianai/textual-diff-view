@@ -140,10 +140,10 @@ The constructor accepts 4 positional arguments:
 
 | Argument | type | Purpose |
 | --- | --- | --- |
-| path_original | str | A path to the original code |
-| path_modified | str | A path to the modified code |
-| code_original | str | The contents of the original code |
-| code_modified | str | The contents of the modified code |
+| path_original | `str` | A path to the original code |
+| path_modified | `str` | A path to the modified code |
+| code_original | `str` | The contents of the original code |
+| code_modified | `str` | The contents of the modified code |
 
 Additionally, the constructor accepts the standard keyword arguments, `name`, `id`, and `classes`——which have the same meaning as Textual's built in widgets.
 
