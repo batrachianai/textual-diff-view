@@ -115,3 +115,97 @@ A few screenshots taken from the example app:
 
 </tr>
 </table>
+
+## Installing
+
+Texual Diff View is on PyPI and may be installed with pip, or uv.
+
+Here's how to install with `uv`:
+
+```
+uv add textual-diff-view
+```
+
+## How to use
+
+Import the widget with the following:
+
+```python
+from textual_diff_view import DiffView
+```
+
+Then yield an instance of `DiffView` in your [compose](https://textual.textualize.io/api/widget/#textual.widget.Widget.compose) method.
+
+The constructor accepts 4 positional arguments:
+
+| Argument | type | Purpose |
+| --- | --- | --- |
+| path_original | str | A path to the original code |
+| path_modified | str | A path to the modified code |
+| code_original | str | The contents of the original code |
+| code_modified | str | The contents of the modified code |
+
+Additionally, the constructor accepts the standard keyword arguments, `name`, `id`, and `classes`——which have the same meaning as Textual's built in widgets.
+
+Here's a very simple example:
+
+```python
+from textual.app import App, ComposeResult
+from textual import containers
+
+from textual_diff_view import DiffView
+
+HELLO1 = """
+def greet():
+    print "Hello!"
+
+greet()
+"""
+
+HELLO2 = """
+def greet(name:str):
+    print(f"Hello, {name}!")
+
+greet('Will')
+"""
+
+
+class Hello(App):
+    def compose(self) -> ComposeResult:
+        with containers.VerticalScroll():
+            yield DiffView("hello1.py", "hello2.py", HELLO1, HELLO2)
+
+
+Hello().run()
+
+```
+
+Note that we put the `DiffView` within a `VerticalScroll`, so the user may scroll the container if the diff doesn't fit.
+
+The above code will generate the following output:
+
+![simple example](./images/hello.png)
+
+### Load constructor
+
+DiffView provides an alternative constructor, `DiffView.load`, which also loads the code.
+If both your original code and modified code is on disk, this may be simpler than the standard constructor.
+
+`DiffView.load` accepts the following positional arguments:
+
+| Argument | type | Purpose |
+| --- | --- | --- |
+| path_original | `str` or `Path` | A path to the original code |
+| path_modified | `str` or `Path` | A path to the modified code |
+
+Since `load` is a coroutine, you would typically call it from a message handler in another widget, or `App`, then mount it somewhere in the DOM.
+
+The code would look something like the following:
+
+```python
+diff_view = await DiffView.load("original.py", "modified.py")
+await self.query_one("VerticalScroll").mount(diff_view)
+```
+
+
+
