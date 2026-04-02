@@ -7,38 +7,6 @@ Originally built for [Toad](https://github.com/batrachianai/toad), Textual Diff 
 
 ![Diff Banner](images/diffbanner.png)
 
-## Screenshots
-
-<table>
-<tr>  
-<td>
-  
-![Split dark](images/split_dark.png)
-
-</td>
-<td>
-  
-![Unified dark](images/unified_dark.png)
-
-</td>
-</tr>
-
-<tr>
-<td>
-  
-![spliut light](images/split_light.png)
-
-</td>
-
-<td>
-  
-![Unified light](images/unified_light.png)
-
-</td>
-
-</tr>
-</table>
-
 ## Features
 
 The `DiffView` widget displays two version of a file with syntax and changes clearly highlighted.
@@ -51,7 +19,7 @@ There are two layout options; a *unified* view which shows the two files top-to-
 
 Textual's theming system provides a variety of themes for the diff view, both light and dark.
 
-## Examples
+## Example
 
 The following is a simple app to display a diff between two files from the command line.
 
@@ -112,3 +80,38 @@ uv run python tdiff.py example1.rs example2.rs
 ```
 
 Use <kbd>space</kbd> to toggle unified / split, and <kbd>a</kbd> to toggle annotations.
+
+
+### Screenshots
+
+A few screenshots taken from the example app:
+
+<table>
+<tr>  
+<td>
+  
+![Split dark](images/split_dark.png)
+
+</td>
+<td>
+  
+![Unified dark](images/unified_dark.png)
+
+</td>
+</tr>
+
+<tr>
+<td>
+  
+![spliut light](images/split_light.png)
+
+</td>
+
+<td>
+  
+![Unified light](images/unified_light.png)
+
+</td>
+
+</tr>
+</table>
