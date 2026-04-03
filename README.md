@@ -5,7 +5,7 @@ Originally built for [Toad](https://github.com/batrachianai/toad), this widget m
 
 This is what it can look like...
 
-![Diff Banner](images/diffbanner.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/diffbanner.png">
 
 ## Features
 
@@ -90,12 +90,12 @@ A few screenshots taken from the example app:
 <tr>  
 <td>
   
-![Split dark](images/split_dark.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/split_dark.png">
 
 </td>
 <td>
   
-![Unified dark](images/unified_dark.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/unified_dark.png">
 
 </td>
 </tr>
@@ -103,13 +103,13 @@ A few screenshots taken from the example app:
 <tr>
 <td>
   
-![spliut light](images/split_light.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/split_light.png">
 
 </td>
 
 <td>
   
-![Unified light](images/unified_light.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/unified_light.png">
 
 </td>
 
@@ -184,7 +184,7 @@ Note that we put the `DiffView` within a `VerticalScroll`, so the user may scrol
 
 The above code will generate the following output:
 
-![simple example](./images/hello.png)
+<img src="https://github.com/batrachianai/textual-diff-view/raw/main/images/hello.png">
 
 ### Load constructor
 
