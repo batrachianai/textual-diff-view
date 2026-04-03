@@ -236,5 +236,5 @@ There are also a few more high-effort features that I could be tempted to implem
 ## License
 
 DiffView is licensed under the terms of the [AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html) license.
-A commercial license if available, if you aren't comfortable with the copyleft restruction.
+A commercial license is available if you aren't comfortable with the copyleft restriction.
 Contact [Will McGugan](https://x.com/willmcgugan) for more information.
