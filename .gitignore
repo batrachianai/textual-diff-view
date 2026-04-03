@@ -207,3 +207,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# Snapshot testing report output (default location)
+snapshot_report.html
+
+# Snapshot tests output
+__snapshots__/
