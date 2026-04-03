@@ -193,7 +193,7 @@ If both your original code and modified code is on disk, this may be simpler tha
 
 `DiffView.load` accepts the following positional arguments:
 
-| Argument | type | Purpose |
+| Argument | Type | Purpose |
 | --- | --- | --- |
 | path_original | `str` or `Path` | A path to the original code |
 | path_modified | `str` or `Path` | A path to the modified code |
@@ -206,6 +206,27 @@ The code would look something like the following:
 diff_view = await DiffView.load("original.py", "modified.py")
 await self.query_one("VerticalScroll").mount(diff_view)
 ```
+
+### Reactives
+
+The DiffView supports the following [reactive](https://textual.textualize.io/guide/reactivity/#reactive-attributes) attributes.
+
+| Name | Type | Explanation |
+| --- | --- | --- |
+| `split` | `bool` | Enables split view when `True`, or unified view when `False` |
+| `auto_split` | `bool` | Automatically enable split view if there is enough space to fit the longest lines from both file. |
+| `annotations` | `bool` | Enable annotations ("+" or "-" symbols). It is reccomended that apps always offer this for color blind users. |
+
+## Roadmap
+
+There are a few remaining features that I anticpate being needed.
+
+- **Word wrapping** The widget currently supports horizontal scrolling (via mouse-wheel, tracpad, or shift+mouse-wheel).
+  This works rather well, but has the downside that it is not especially discoverable.
+  An option to enable word wrapping would be useful.
+- **ANSI theme** A future version will add support for ANSI themes, which is limited to the user's choice of 16 colors.
+  It will never look as good, but some people say they prefer it.
+ 
 
 
 
