@@ -20,7 +20,7 @@ exclude = ["tests/__snapshots__"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
-    "pytest-textual-snapshot>=1.0.0",
+    "pytest-textual-snapshot>=1.1.0",
 ]
 
 [tool.pytest.ini_options]

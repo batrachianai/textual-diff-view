@@ -474,6 +474,8 @@ class DiffView(containers.VerticalGroup):
     def get_title(self) -> Content:
         """Get a title for the diff view.
 
+        May be implemented in as subclass to provide a custom title.
+
         Returns:
             A Content instance.
         """
