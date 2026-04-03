@@ -227,8 +227,8 @@ There are a few remaining features that I anticipate a need for:
 - **ANSI theme** A future version will add support for ANSI themes, which is limited to the user's choice of 16 colors.
   It will never look as good, but some people say they prefer it.
 
-There are also a few more high-effort features, that I could be tempted to implement:
+There are also a few more high-effort features that I could be tempted to implement:
 
-- **Swappable diff methods**. There is no perfect diff algorith. They all have their trade-offs.
+- **Swappable diff methods**. There is no perfect diff algorithm. They all have their trade-offs.
   The `DiffView` widget uses Python's `difflib` but it could offer an interface to add other diff algorithms.
-- **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code. 
+- **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code.
