@@ -43,6 +43,8 @@ class Ellipsis(Static):
 
 
 class DiffScrollContainer(containers.HorizontalGroup):
+    """A horizontally scrolling container, that also scrolls is sibling."""
+
     scroll_link: var[Widget | None] = var(None)
     DEFAULT_CSS = """
     DiffScrollContainer {
@@ -59,6 +61,8 @@ class DiffScrollContainer(containers.HorizontalGroup):
 
 
 class LineContent(Visual):
+    """A visual to show a diff line."""
+
     def __init__(
         self,
         code_lines: list[Content | None],
@@ -494,6 +498,7 @@ class DiffView(containers.VerticalGroup):
             yield from self.compose_unified()
 
     def _check_auto_split(self, width: int):
+        """Check if the view can split can split without obscuring any code."""
         if self.auto_split:
             lines_a, lines_b = self.highlighted_code_lines
             split_width = max([line.cell_length for line in (lines_a + lines_b)]) * 2

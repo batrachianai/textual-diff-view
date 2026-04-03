@@ -10,10 +10,11 @@ readme = "README.md"
 authors = [
     { name = "Will McGugan", email = "willmcgugan@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "textual>=8.2.1",
 ]
+exclude = ["tests/__snapshots__"]
 
 [dependency-groups]
 dev = [
