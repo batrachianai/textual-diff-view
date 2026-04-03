@@ -9,11 +9,11 @@ Originally built for [Toad](https://github.com/batrachianai/toad), this widget m
 
 ## Features
 
-The `DiffView` widget displays two version of a file with syntax and changes clearly highlighted.
+The `DiffView` widget displays two versions of a file with syntax and changes clearly highlighted.
 Deleted lines / characters are shown with a red highlight.
 Added lines / characters are shown with a green highlight.
 
-There are two layout options; a *unified* view which shows the two files top-to-bottom with highlights, and a *split* view which shoiws the two files next to each other.
+There are two layout options; a *unified* view which shows the two files top-to-bottom with highlights, and a *split* view which shows the two files next to each other.
 
 `DiffView` can also display annotations ("+" and "-" for added and deleted), to improve readability for color blind users.
 
@@ -219,14 +219,16 @@ The DiffView supports the following [reactive](https://textual.textualize.io/gui
 
 ## Roadmap
 
-There are a few remaining features that I anticpate being needed.
+There are a few remaining features that I anticipate a need for:
 
-- **Word wrapping** The widget currently supports horizontal scrolling (via mouse-wheel, tracpad, or shift+mouse-wheel).
+- **Word wrapping** The widget currently supports horizontal scrolling (via mouse-wheel, trackpad, or shift+mouse-wheel).
   This works rather well, but has the downside that it is not especially discoverable.
   An option to enable word wrapping would be useful.
 - **ANSI theme** A future version will add support for ANSI themes, which is limited to the user's choice of 16 colors.
   It will never look as good, but some people say they prefer it.
- 
 
+There are also a few more high-effort features that I could be tempted to implement:
 
-
+- **Swappable diff methods**. There is no perfect diff algorithm. They all have their trade-offs.
+  The `DiffView` widget uses Python's `difflib` but it could offer an interface to add other diff algorithms.
+- **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code.
