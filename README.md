@@ -232,3 +232,9 @@ There are also a few more high-effort features that I could be tempted to implem
 - **Swappable diff methods**. There is no perfect diff algorithm. They all have their trade-offs.
   The `DiffView` widget uses Python's `difflib` but it could offer an interface to add other diff algorithms.
 - **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code.
+
+## License
+
+DiffView is licensed under the terms of the [AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html) license.
+A commercial license if available, if you aren't comfortable with the copyleft restruction.
+Contact [Will McGugan](https://x.com/willmcgugan) for more information.
