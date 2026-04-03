@@ -230,5 +230,5 @@ There are a few remaining features that I anticipate a need for:
 There are also a few more high-effort features, that I could be tempted to implement:
 
 - **Swappable diff methods**. There is no perfect diff algorith. They all have their trade-offs.
-  The `DiffView` widget uses Python's `difflib` but it could offer a interface to add other diff algorithms.
+  The `DiffView` widget uses Python's `difflib` but it could offer an interface to add other diff algorithms.
 - **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code. 
