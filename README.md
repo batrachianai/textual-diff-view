@@ -226,12 +226,14 @@ There are a few remaining features that I anticipate a need for:
   An option to enable word wrapping would be useful.
 - **ANSI theme** A future version will add support for ANSI themes, which is limited to the user's choice of 16 colors.
   It will never look as good, but some people say they prefer it.
+- **Expand control** A clickable icon or link to expand the number of lines surrounding an edit. 
 
 There are also a few more high-effort features that I could be tempted to implement:
 
 - **Swappable diff methods**. There is no perfect diff algorithm. They all have their trade-offs.
   The `DiffView` widget uses Python's `difflib` but it could offer an interface to add other diff algorithms.
 - **AST level diffs** A diff view that works at the AST level can offer diffs that more closely reflect how a human might edit code.
+- **Notes** Add notes associated with specific lines, displayed in a panel or pop-up.
 
 ## License
 
