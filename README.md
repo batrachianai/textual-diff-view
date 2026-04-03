@@ -9,7 +9,7 @@ Originally built for [Toad](https://github.com/batrachianai/toad), this widget m
 
 ## Features
 
-The `DiffView` widget displays two version of a file with syntax and changes clearly highlighted.
+The `DiffView` widget displays two versions of a file with syntax and changes clearly highlighted.
 Deleted lines / characters are shown with a red highlight.
 Added lines / characters are shown with a green highlight.
 
