@@ -221,7 +221,7 @@ The DiffView supports the following [reactive](https://textual.textualize.io/gui
 
 There are a few remaining features that I anticipate a need for:
 
-- **Word wrapping** The widget currently supports horizontal scrolling (via mouse-wheel, tracpad, or shift+mouse-wheel).
+- **Word wrapping** The widget currently supports horizontal scrolling (via mouse-wheel, trackpad, or shift+mouse-wheel).
   This works rather well, but has the downside that it is not especially discoverable.
   An option to enable word wrapping would be useful.
 - **ANSI theme** A future version will add support for ANSI themes, which is limited to the user's choice of 16 colors.
