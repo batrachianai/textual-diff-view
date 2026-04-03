@@ -1,7 +1,5 @@
 # Textual Diff View
 
-Currently a WIP. 
-
 Textual Diff View is a [Textual](https://github.com/textualize/textual) widget to display beautiful diffs in your terminal application.
 Originally built for [Toad](https://github.com/batrachianai/toad), this widget may be used standalone.
 
