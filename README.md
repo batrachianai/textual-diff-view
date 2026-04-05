@@ -66,7 +66,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 3:
-        print("Usage python tdiff.py PATH1 PATH2\nTry: python tdiff.py")
+        print("Usage python tdiff.py PATH1 PATH2\nTry: python tdiff.py example1.rs example2.rs")
     else:
         app = DiffApp(sys.argv[1], sys.argv[2])
         app.run()
