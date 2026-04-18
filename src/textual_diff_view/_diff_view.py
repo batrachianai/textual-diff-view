@@ -235,9 +235,10 @@ class FoldedLineContent(Visual):
 
     def get_height(self, rules: RulesMap, width: int) -> int:
         height = 0
+
         for annotate, code_length in zip(self.annotations, self.code_lengths):
             fold_width = max(0, width - annotate.cell_length)
-            height += ceil(code_length / fold_width)
+            height += ceil(code_length / fold_width) if code_length else 1
         return height
 
 
