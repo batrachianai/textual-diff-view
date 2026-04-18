@@ -527,6 +527,10 @@ class DiffView(containers.VerticalGroup):
 
     _last_wrap_width: int = 0
 
+    async def watch_annotations(self) -> None:
+        if self.wrap:
+            await self.recompose()
+
     async def on_resize(self, event: events.Resize) -> None:
         self._check_auto_split(event.size.width)
         if self.wrap and event.size.width != self._last_wrap_width:
@@ -787,11 +791,15 @@ class DiffView(containers.VerticalGroup):
 
             gutter_width = 1 + line_number_width + 1
             annotation_width = 3 if self.annotations else 1
-            code_width = (
+            remaining = (
                 available_width - 2 * (gutter_width + annotation_width)
-            ) // 2
-            if code_width < 2:
-                code_width = 2
+            )
+            code_width_a = remaining // 2
+            code_width_b = remaining - code_width_a
+            if code_width_a < 2:
+                code_width_a = 2
+            if code_width_b < 2:
+                code_width_b = 2
 
             exp_a_code: list[Content | None] = []
             exp_b_code: list[Content | None] = []
@@ -811,16 +819,16 @@ class DiffView(containers.VerticalGroup):
                 num_b = line_numbers_b[idx]
 
                 parts_a: list[Content | None]
-                if line_a is None or line_a.cell_length <= code_width:
+                if line_a is None or line_a.cell_length <= code_width_a:
                     parts_a = [line_a]
                 else:
-                    parts_a = list(line_a.fold(code_width))
+                    parts_a = list(line_a.fold(code_width_a))
 
                 parts_b: list[Content | None]
-                if line_b is None or line_b.cell_length <= code_width:
+                if line_b is None or line_b.cell_length <= code_width_b:
                     parts_b = [line_b]
                 else:
-                    parts_b = list(line_b.fold(code_width))
+                    parts_b = list(line_b.fold(code_width_b))
 
                 max_h = max(len(parts_a), len(parts_b))
 
@@ -913,7 +921,7 @@ class DiffView(containers.VerticalGroup):
                 ]
                 diff_code_a = DiffCode(
                     LineContent(
-                        exp_a_code, code_line_styles, width=code_width
+                        exp_a_code, code_line_styles, width=code_width_a
                     )
                 )
                 diff_code_a.styles.width = "1fr"
@@ -937,7 +945,7 @@ class DiffView(containers.VerticalGroup):
                 ]
                 diff_code_b = DiffCode(
                     LineContent(
-                        exp_b_code, code_line_styles, width=code_width
+                        exp_b_code, code_line_styles, width=code_width_b
                     )
                 )
                 diff_code_b.styles.width = "1fr"
