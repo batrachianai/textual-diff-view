@@ -12,12 +12,12 @@ class DiffApp(App):
     BINDINGS = [
         ("space", "toggle('split')", "Toggle split"),
         ("a", "toggle('annotations')", "Toggle annotations"),
-        ("f", "toggle('fold')", "Toggle fold"),
+        ("w", "toggle('wrap')", "Toggle wrap"),
     ]
 
-    split = var(False)
+    split = var(True)
     annotations = var(True)
-    fold = var(True)
+    wrap = var(True)
 
     def __init__(self, original: str, modified: str) -> None:
         self.original = original
@@ -35,12 +35,12 @@ class DiffApp(App):
                 self.modified,
                 split=self.split,
                 annotations=self.annotations,
-                fold=self.fold,
+                wrap=self.wrap,
             )
         except LoadError as error:
             self.notify(str(error), title="Failed to load code", severity="error")
         else:
-            diff_view.data_bind(DiffApp.split, DiffApp.annotations, DiffApp.fold)
+            diff_view.data_bind(DiffApp.split, DiffApp.annotations, DiffApp.wrap)
             await self.query_one("#diff-container").mount(diff_view)
 
 

@@ -6,7 +6,7 @@ import difflib
 from itertools import starmap
 from os import PathLike
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Mapping, TypeAlias, TypeVar
 
 from rich.segment import Segment
 from rich.style import Style as RichStyle
@@ -29,7 +29,7 @@ from textual import containers
 
 from textual._loop import loop_last
 
-type Annotation = Literal["+", "-", "/", " "]
+Annotation: TypeAlias = Literal["+", "-", "/", " "]
 
 
 class LoadError(Exception):
@@ -216,7 +216,14 @@ class FoldedLineContent(Visual):
         return 1
 
     def get_height(self, rules: RulesMap, width: int) -> int:
-        return len(self.line_styles)
+        height = 0
+        for annotate, content in zip(self.annotations, self.code_lines):
+            fold_width = max(0, width - annotate.cell_length)
+            if content is None:
+                height += 1
+            else:
+                height += len(content.fold(fold_width))
+        return height
 
 
 class LineAnnotations(Widget):
@@ -295,7 +302,10 @@ class DiffCode(Static):
         return selection.extract(text), "\n"
 
 
-def fill_lists[T](list_a: list[T], list_b: list[T], fill_value: T) -> None:
+T = TypeVar("T")
+
+
+def fill_lists(list_a: list[T], list_b: list[T], fill_value: T) -> None:
     """Make two lists the same size by extending the smaller with a fill value.
 
     Args:
@@ -327,12 +337,12 @@ class DiffView(containers.VerticalGroup):
 
     split: reactive[bool] = reactive(True, recompose=True)
     """Enable split view?"""
-    annotations: reactive[bool] = reactive(False, recompose=True)
+    annotations: reactive[bool] = reactive(True, recompose=True)
     """Show annotations?"""
     auto_split: var[bool] = var(False)
     """Automaticallly enable split view if there is enough space?"""
-    fold: reactive[bool] = reactive(False, recompose=True)
-    """Fold long lines (rather than horizontal scroll)."""
+    wrap: reactive[bool] = reactive(False, recompose=True)
+    """Wrap long lines (rather than horizontal scroll)."""
 
     DEFAULT_CSS = """
     DiffView {
@@ -365,7 +375,11 @@ class DiffView(containers.VerticalGroup):
         " ": "$foreground 30% on $foreground 3%",
     }
     """Line number styles."""
-    ANNOTATION_STYLES = {"+": "bold $text-success", "-": "bold $text-error", " ": ""}
+    ANNOTATION_STYLES = {
+        "+": "$text-success 95%",
+        "-": "$text-error 95%",
+        " ": "",
+    }
     """Annotation styles (+ or -)."""
     LINE_STYLES = {
         "+": "on $success 10%",
@@ -389,9 +403,9 @@ class DiffView(containers.VerticalGroup):
         code_modified: str,
         *,
         split: bool = True,
-        annotations: bool = False,
+        annotations: bool = True,
         auto_split: bool = False,
-        fold: bool = True,
+        wrap: bool = False,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
@@ -406,7 +420,7 @@ class DiffView(containers.VerticalGroup):
         self.set_reactive(DiffView.split, split)
         self.set_reactive(DiffView.annotations, annotations)
         self.set_reactive(DiffView.auto_split, auto_split)
-        self.set_reactive(DiffView.fold, fold)
+        self.set_reactive(DiffView.wrap, wrap)
 
         self._grouped_opcodes: list[list[tuple[str, int, int, int, int]]] | None = None
         self._highlighted_code_lines: tuple[list[Content], list[Content]] | None = None
@@ -418,9 +432,9 @@ class DiffView(containers.VerticalGroup):
         path_modified: str | PathLike,
         *,
         split: bool = True,
-        annotations: bool = False,
+        annotations: bool = True,
         auto_split: bool = False,
-        fold: bool = True,
+        wrap: bool = False,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
@@ -468,7 +482,7 @@ class DiffView(containers.VerticalGroup):
             split=split,
             annotations=annotations,
             auto_split=auto_split,
-            fold=fold,
+            wrap=wrap,
             name=name,
             id=id,
             classes=classes,
@@ -649,8 +663,8 @@ class DiffView(containers.VerticalGroup):
         self._check_auto_split(self.size.width)
 
     def compose_unified(self) -> ComposeResult:
-        if self.fold:
-            yield from self._compose_unified_folded()
+        if self.wrap:
+            yield from self._compose_unified_wrap()
         else:
             yield from self._compose_unified()
 
@@ -736,7 +750,55 @@ class DiffView(containers.VerticalGroup):
             if not last:
                 yield Ellipsis("⋮")
 
-    def _compose_unified_folded(self) -> ComposeResult:
+    def _make_continuations(self, width: int) -> Mapping[str, Content]:
+        """Make continuations (content used in gutter when a line wraps).
+
+        Args:
+            width: Width of the gutter.
+
+        Returns:
+            Mapping of annotation to content.
+        """
+
+        blank_continuation = Content.styled(f"▎{' ' * (width - 2)} ")
+        add_continuation = blank_continuation.stylize(self.EDGE_STYLES["+"])
+        remove_contuation = blank_continuation.stylize(self.EDGE_STYLES["-"])
+        blank_continuation = blank_continuation.stylize(self.EDGE_STYLES[" "])
+
+        if self.annotations:
+            add_continuation = add_continuation.append(
+                Content.styled(" ↪ ", self.LINE_STYLES["+"]).stylize(
+                    self.ANNOTATION_STYLES["+"]
+                )
+            )
+            remove_contuation = remove_contuation.append(
+                Content.styled(" ↪ ", self.LINE_STYLES["-"]).stylize(
+                    self.ANNOTATION_STYLES["-"]
+                )
+            )
+            blank_continuation = blank_continuation.append(
+                Content.styled(" ↪ ", self.LINE_STYLES[" "])
+            ).stylize("dim")
+        else:
+            add_continuation = add_continuation.append(
+                Content.blank(1, self.LINE_STYLES["+"])
+            )
+            remove_contuation = remove_contuation.append(
+                Content.blank(1, self.LINE_STYLES["-"])
+            )
+            blank_continuation = blank_continuation.append(
+                Content.blank(1, self.LINE_STYLES[" "])
+            )
+
+        continuations = {
+            "+": add_continuation,
+            "-": remove_contuation,
+            " ": blank_continuation,
+            "/": blank_continuation,
+        }
+        return continuations
+
+    def _compose_unified_wrap(self) -> ComposeResult:
         lines_a, lines_b = self.highlighted_code_lines
 
         for last, group in loop_last(self.grouped_opcodes):
@@ -810,30 +872,7 @@ class DiffView(containers.VerticalGroup):
                     Content("").join(annotate) for annotate in annotations
                 ]
 
-                blank_continuation = Content.styled(
-                    f"▎{' ' * (line_number_width * 2 + 2)} "
-                )
-                add_continuation = blank_continuation.stylize(EDGE_STYLES["+"])
-                remove_contuation = blank_continuation.stylize(EDGE_STYLES["-"])
-                blank_continuation = blank_continuation.stylize(EDGE_STYLES[" "])
-
-                if self.annotations:
-                    add_continuation = add_continuation.append(
-                        Content.blank(3, LINE_STYLES["+"])
-                    )
-                    remove_contuation = remove_contuation.append(
-                        Content.blank(3, LINE_STYLES["-"])
-                    )
-                    blank_continuation = blank_continuation.append(
-                        Content.blank(3, LINE_STYLES[" "])
-                    )
-
-                CONTINUATIONS = {
-                    "+": add_continuation,
-                    "-": remove_contuation,
-                    " ": blank_continuation,
-                }
-
+                continuations = self._make_continuations(line_number_width * 2 + 4)
                 code_line_styles = [
                     LINE_STYLES[annotation] for annotation in line_annotations
                 ]
@@ -843,7 +882,7 @@ class DiffView(containers.VerticalGroup):
                         FoldedLineContent(
                             annotation_prefixes,
                             [
-                                (CONTINUATIONS[annotate])
+                                (continuations[annotate])
                                 for annotate in line_annotations
                             ],
                             code_lines,
@@ -855,6 +894,14 @@ class DiffView(containers.VerticalGroup):
                 yield Ellipsis("⋮")
 
     def compose_split(self) -> ComposeResult:
+        print("WRAP", self.wrap)
+        print("ANNOTATIONS", self.annotations)
+        if self.wrap:
+            yield from self._compose_split_wrap()
+        else:
+            yield from self._compose_split()
+
+    def _compose_split(self) -> ComposeResult:
         lines_a, lines_b = self.highlighted_code_lines
 
         annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
@@ -947,10 +994,13 @@ class DiffView(containers.VerticalGroup):
                     starmap(format_number, zip(line_numbers_a, annotations_a))
                 )
                 # Before annotations
-                yield LineAnnotations(
-                    [make_annotation(annotation, "-") for annotation in annotations_a],
-                    classes="annotations",
-                )
+                if self.annotations:
+                    yield LineAnnotations(
+                        [
+                            make_annotation(annotation, "-")
+                            for annotation in annotations_a
+                        ],
+                    )
 
                 code_line_styles = [
                     self.LINE_STYLES[annotation] for annotation in annotations_a
@@ -971,10 +1021,13 @@ class DiffView(containers.VerticalGroup):
                     starmap(format_number, zip(line_numbers_b, annotations_b))
                 )
                 # After annotations
-                yield LineAnnotations(
-                    [make_annotation(annotation, "+") for annotation in annotations_b],
-                    classes="annotations",
-                )
+                if self.annotations:
+                    yield LineAnnotations(
+                        [
+                            make_annotation(annotation, "+")
+                            for annotation in annotations_b
+                        ],
+                    )
 
                 code_line_styles = [
                     self.LINE_STYLES[annotation] for annotation in annotations_b
@@ -988,6 +1041,151 @@ class DiffView(containers.VerticalGroup):
                 # Link scroll containers, so they scroll together
                 scroll_container_a.scroll_link = scroll_container_b
                 scroll_container_b.scroll_link = scroll_container_a
+
+            if not last:
+                with containers.HorizontalGroup():
+                    yield Ellipsis("⋮")
+                    yield Ellipsis("⋮")
+
+    def _compose_split_wrap(self) -> ComposeResult:
+        lines_a, lines_b = self.highlighted_code_lines
+
+        annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
+        annotation_blank = Content(" " * 3)
+
+        def make_annotation(
+            annotation: Annotation, highlight_annotation: Literal["+", "-"]
+        ) -> Content:
+            """Format an annotation.
+
+            Args:
+                annotation: Annotation to format.
+                highlight_annotation: Annotation to highlight ('+' or '-')
+
+            Returns:
+                Content with annotation.
+            """
+            if not self.annotations:
+                return (
+                    Content.blank(1)
+                    .stylize(self.LINE_STYLES[annotation])
+                    .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
+                )
+            if annotation == highlight_annotation:
+                return (
+                    Content(f" {annotation} ")
+                    .stylize(self.LINE_STYLES[annotation])
+                    .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
+                )
+            if annotation == "/":
+                return annotation_hatch
+            return annotation_blank
+
+        for last, group in loop_last(self.grouped_opcodes):
+            line_numbers_a: list[int | None] = []
+            line_numbers_b: list[int | None] = []
+            annotations_a: list[Annotation] = []
+            annotations_b: list[Annotation] = []
+            code_lines_a: list[Content | None] = []
+            code_lines_b: list[Content | None] = []
+            for tag, i1, i2, j1, j2 in group:
+                if tag == "equal":
+                    for line_offset, line in enumerate(lines_a[i1:i2], 1):
+                        annotations_a.append(" ")
+                        annotations_b.append(" ")
+                        line_numbers_a.append(i1 + line_offset)
+                        line_numbers_b.append(j1 + line_offset)
+                        code_lines_a.append(line)
+                        code_lines_b.append(line)
+                else:
+                    if tag in {"delete", "replace"}:
+                        for line_number, line in enumerate(lines_a[i1:i2], i1 + 1):
+                            annotations_a.append("-")
+                            line_numbers_a.append(line_number)
+                            code_lines_a.append(line)
+                    if tag in {"insert", "replace"}:
+                        for line_number, line in enumerate(lines_b[j1:j2], j1 + 1):
+                            annotations_b.append("+")
+                            line_numbers_b.append(line_number)
+                            code_lines_b.append(line)
+                    fill_lists(code_lines_a, code_lines_b, None)
+                    fill_lists(annotations_a, annotations_b, "/")
+                    fill_lists(line_numbers_a, line_numbers_b, None)
+
+            if line_numbers_a or line_numbers_b:
+                line_number_width = max(
+                    0 if line_no is None else len(str(line_no))
+                    for line_no in (line_numbers_a + line_numbers_b)
+                )
+            else:
+                line_number_width = 1
+
+            hatch = Content.styled("╲" * (2 + line_number_width), "$foreground 15%")
+
+            def format_number(line_no: int | None, annotation: str) -> Content:
+                """Format a line number with an annotation.
+
+                Args:
+                    line_no: Line number or `None` if there is no line here.
+                    annotation: An annotation string ('+', '-', or ' ')
+
+                Returns:
+                    Content for use in the `LineAnnotations` widget.
+                """
+                return (
+                    hatch
+                    if line_no is None
+                    else Content(f"▎{line_no:>{line_number_width}} ")
+                    .stylize(self.NUMBER_STYLES[annotation], 1)
+                    .stylize(self.EDGE_STYLES[annotation], 0, 1)
+                )
+
+            with containers.HorizontalGroup(classes="diff-group"):
+                annotations = [
+                    Content.assemble(
+                        format_number(line_number, annotation),
+                        make_annotation(annotation, "-"),
+                    )
+                    for line_number, annotation in zip(line_numbers_a, annotations_a)
+                ]
+                continuations = self._make_continuations(line_number_width + 2)
+                code_line_styles = [
+                    self.LINE_STYLES[annotation] for annotation in annotations_a
+                ]
+
+                # Before code
+                with DiffScrollContainer():
+                    yield DiffCode(
+                        FoldedLineContent(
+                            annotations,
+                            [(continuations[annotate]) for annotate in annotations_a],
+                            code_lines_a,
+                            code_line_styles,
+                        )
+                    )
+
+                annotations = [
+                    Content.assemble(
+                        format_number(line_number, annotation),
+                        make_annotation(annotation, "+"),
+                    )
+                    for line_number, annotation in zip(line_numbers_b, annotations_b)
+                ]
+
+                code_line_styles = [
+                    self.LINE_STYLES[annotation] for annotation in annotations_b
+                ]
+
+                # Before code
+                with DiffScrollContainer():
+                    yield DiffCode(
+                        FoldedLineContent(
+                            annotations,
+                            [(continuations[annotate]) for annotate in annotations_b],
+                            code_lines_b,
+                            code_line_styles,
+                        )
+                    )
 
             if not last:
                 with containers.HorizontalGroup():
