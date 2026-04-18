@@ -156,7 +156,7 @@ class FoldedLineContent(Visual):
         code_lines: list[Content | None] = []
         line_styles: list[str] = []
 
-        for annotate, continution, content, color, code_length in zip(
+        for annotate, continuation, content, color, code_length in zip(
             self.annotations,
             self.continuations,
             self.code_lines,
@@ -183,7 +183,7 @@ class FoldedLineContent(Visual):
             else:
                 # TODO
                 annotations.append(annotate)
-                annotations.extend([continution] * (len(folded_lines) - 1))
+                annotations.extend([continuation] * (len(folded_lines) - 1))
 
             code_lines.extend(folded_lines)
             line_styles.extend([color] * len(folded_lines))
@@ -805,7 +805,7 @@ class DiffView(containers.VerticalGroup):
 
         blank_continuation = Content.styled(f"▎{' ' * (width - 2)} ")
         add_continuation = blank_continuation.stylize(self.EDGE_STYLES["+"])
-        remove_contuation = blank_continuation.stylize(self.EDGE_STYLES["-"])
+        remove_continuation = blank_continuation.stylize(self.EDGE_STYLES["-"])
         blank_continuation = blank_continuation.stylize(self.EDGE_STYLES[" "])
 
         if self.annotations:
@@ -814,7 +814,7 @@ class DiffView(containers.VerticalGroup):
                     self.ANNOTATION_STYLES["+"]
                 )
             )
-            remove_contuation = remove_contuation.append(
+            remove_continuation = remove_continuation.append(
                 Content.styled(" ↪ ", self.LINE_STYLES["-"]).stylize(
                     self.ANNOTATION_STYLES["-"]
                 )
@@ -826,7 +826,7 @@ class DiffView(containers.VerticalGroup):
             add_continuation = add_continuation.append(
                 Content.blank(1, self.LINE_STYLES["+"])
             )
-            remove_contuation = remove_contuation.append(
+            remove_continuation = remove_continuation.append(
                 Content.blank(1, self.LINE_STYLES["-"])
             )
             blank_continuation = blank_continuation.append(
@@ -835,7 +835,7 @@ class DiffView(containers.VerticalGroup):
 
         continuations = {
             "+": add_continuation,
-            "-": remove_contuation,
+            "-": remove_continuation,
             " ": blank_continuation,
             "/": blank_continuation,
         }
@@ -1087,7 +1087,7 @@ class DiffView(containers.VerticalGroup):
                     yield Ellipsis("⋮")
 
     def _compose_split_wrap(self) -> ComposeResult:
-        """Compse split view with wrapping."""
+        """Compose split view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
         annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
