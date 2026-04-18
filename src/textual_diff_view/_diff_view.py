@@ -424,9 +424,23 @@ class DiffView(containers.VerticalGroup):
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
-        disabled: bool = False,
     ):
-        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+        """Initialize diff view.
+
+        Args:
+            path_original: Path to original code.
+            path_modified: Path to modified code.
+            code_original: Original code.
+            code_modified: Modified code.
+            split: Enable split view?
+            annotations: Enable annotations ("+" and  "-")?
+            auto_split: Automatically enable split view if it fits?
+            wrap: Wrap code (rather than horizontal scroll)?
+            name: Textual CSS name.
+            id: Textual CSS id.
+            classes: Textual CSS classes.
+        """
+        super().__init__(name=name, id=id, classes=classes)
         self.set_reactive(DiffView.path_original, path_original)
         self.set_reactive(DiffView.path_modified, path_modified)
         self.set_reactive(DiffView.code_original, code_original.expandtabs())
@@ -462,6 +476,13 @@ class DiffView(containers.VerticalGroup):
         Args:
             path_original: A str or Path to the original file.
             path_modified: A str or Path to the modified file.
+            split: Enable split view?
+            annotations: Enable annotations ("+" and  "-")?
+            auto_split: Automatically enable split view if it fits?
+            wrap: Wrap code (rather than horizontal scroll)?
+            name: Textual CSS name.
+            id: Textual CSS id.
+            classes: Textual CSS classes.
 
         Raises:
             OSError: If the file could not be loaded.
@@ -501,11 +522,8 @@ class DiffView(containers.VerticalGroup):
             name=name,
             id=id,
             classes=classes,
-            disabled=disabled,
         )
-
         await diff_view.prepare()
-
         return diff_view
 
     async def prepare(self) -> None:
@@ -677,12 +695,15 @@ class DiffView(containers.VerticalGroup):
         self._check_auto_split(self.size.width)
 
     def compose_unified(self) -> ComposeResult:
+        """Compose unified view."""
+        # Branch for wrapping
         if self.wrap:
             yield from self._compose_unified_wrap()
         else:
             yield from self._compose_unified()
 
     def _compose_unified(self) -> ComposeResult:
+        """Compose unified view (no wrapping)."""
         lines_a, lines_b = self.highlighted_code_lines
 
         for last, group in loop_last(self.grouped_opcodes):
@@ -823,6 +844,7 @@ class DiffView(containers.VerticalGroup):
         return continuations
 
     def _compose_unified_wrap(self) -> ComposeResult:
+        """Compose unified view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
         for last, group in loop_last(self.grouped_opcodes):
@@ -918,12 +940,15 @@ class DiffView(containers.VerticalGroup):
                 yield Ellipsis("⋮")
 
     def compose_split(self) -> ComposeResult:
+        """Compose split view"""
+        # Branch for wrapping
         if self.wrap:
             yield from self._compose_split_wrap()
         else:
             yield from self._compose_split()
 
     def _compose_split(self) -> ComposeResult:
+        """Compose the split view (no wrapping)."""
         lines_a, lines_b = self.highlighted_code_lines
 
         annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
@@ -1064,6 +1089,7 @@ class DiffView(containers.VerticalGroup):
                     yield Ellipsis("⋮")
 
     def _compose_split_wrap(self) -> ComposeResult:
+        """Compse split view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
         annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
