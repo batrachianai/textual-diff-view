@@ -66,7 +66,7 @@ def test_diff_view_annotations(snap_compare):
 
 
 def test_diff_view_unified_annotations(snap_compare):
-    def run_before(pilot: Pilot):
+    async def run_before(pilot: Pilot):
         pilot.app.query_one(DiffView).split = False
         pilot.app.query_one(DiffView).annotations = True
 

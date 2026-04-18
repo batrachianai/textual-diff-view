@@ -352,7 +352,7 @@ class DiffView(containers.VerticalGroup):
 
     split: reactive[bool] = reactive(True, recompose=True)
     """Enable split view?"""
-    annotations: reactive[bool] = reactive(True, recompose=True)
+    annotations: reactive[bool] = reactive(False, recompose=True)
     """Show annotations?"""
     auto_split: var[bool] = var(False)
     """Automaticallly enable split view if there is enough space?"""
@@ -418,7 +418,7 @@ class DiffView(containers.VerticalGroup):
         code_modified: str,
         *,
         split: bool = True,
-        annotations: bool = True,
+        annotations: bool = False,
         auto_split: bool = False,
         wrap: bool = False,
         name: str | None = None,
@@ -447,7 +447,7 @@ class DiffView(containers.VerticalGroup):
         path_modified: str | PathLike,
         *,
         split: bool = True,
-        annotations: bool = True,
+        annotations: bool = False,
         auto_split: bool = False,
         wrap: bool = False,
         name: str | None = None,
@@ -648,7 +648,6 @@ class DiffView(containers.VerticalGroup):
 
     def compose(self) -> ComposeResult:
         """Compose either split or unified view."""
-
         yield Static(self.get_title(), classes="title")
         if self.split:
             yield from self.compose_split()
@@ -747,15 +746,25 @@ class DiffView(containers.VerticalGroup):
                     ]
                 )
 
-                yield LineAnnotations(
-                    [
-                        (Content(f" {annotation} "))
-                        .stylize(LINE_STYLES[annotation])
-                        .stylize(ANNOTATION_STYLES[annotation])
-                        for annotation in annotations
-                    ],
-                    classes="annotations",
-                )
+                if self.annotations:
+                    yield LineAnnotations(
+                        [
+                            (Content(f" {annotation} "))
+                            .stylize(LINE_STYLES[annotation])
+                            .stylize(ANNOTATION_STYLES[annotation])
+                            for annotation in annotations
+                        ]
+                    )
+                else:
+                    blank = Content.blank(1)
+                    yield LineAnnotations(
+                        [
+                            blank.stylize(LINE_STYLES[annotation]).stylize(
+                                ANNOTATION_STYLES[annotation]
+                            )
+                            for annotation in annotations
+                        ]
+                    )
                 code_line_styles = [
                     LINE_STYLES[annotation] for annotation in annotations
                 ]
