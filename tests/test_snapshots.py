@@ -71,3 +71,37 @@ def test_diff_view_unified_annotations(snap_compare):
         pilot.app.query_one(DiffView).annotations = True
 
     assert snap_compare(DiffApp(), run_before=run_before)
+
+
+def test_diff_view_split_wrap(snap_compare):
+    async def run_before(pilot: Pilot):
+        pilot.app.query_one(DiffView).split = True
+        pilot.app.query_one(DiffView).wrap = True
+
+    assert snap_compare(DiffApp(), terminal_size=(40, 24), run_before=run_before)
+
+
+def test_diff_view_split_wrap_annotations(snap_compare):
+    async def run_before(pilot: Pilot):
+        pilot.app.query_one(DiffView).split = True
+        pilot.app.query_one(DiffView).wrap = True
+        pilot.app.query_one(DiffView).annotations = True
+
+    assert snap_compare(DiffApp(), terminal_size=(40, 24), run_before=run_before)
+
+
+def test_diff_view_unified_wrap(snap_compare):
+    async def run_before(pilot: Pilot):
+        pilot.app.query_one(DiffView).split = False
+        pilot.app.query_one(DiffView).wrap = True
+
+    assert snap_compare(DiffApp(), terminal_size=(20, 24), run_before=run_before)
+
+
+def test_diff_view_unified_wrap_annotations(snap_compare):
+    async def run_before(pilot: Pilot):
+        pilot.app.query_one(DiffView).split = False
+        pilot.app.query_one(DiffView).wrap = True
+        pilot.app.query_one(DiffView).annotations = True
+
+    assert snap_compare(DiffApp(), terminal_size=(20, 24), run_before=run_before)
