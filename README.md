@@ -216,6 +216,7 @@ The DiffView supports the following [reactive](https://textual.textualize.io/gui
 | `split` | `bool` | Enables split view when `True`, or unified view when `False` |
 | `auto_split` | `bool` | Automatically enable split view if there is enough space to fit the longest lines from both file. |
 | `annotations` | `bool` | Enable annotations ("+" or "-" symbols). It is reccomended that apps always offer this for color blind users. |
+| `wrap` | `bool` | Wrap code lines rather than enable horizontal scrolling. |
 
 ## Roadmap
 
