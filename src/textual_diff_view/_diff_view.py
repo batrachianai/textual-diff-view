@@ -259,9 +259,8 @@ class LineAnnotations(Widget):
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
-        disabled: bool = False,
     ):
-        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+        super().__init__(name=name, id=id, classes=classes)
         self.numbers = list(numbers)
 
     @property
@@ -467,7 +466,6 @@ class DiffView(containers.VerticalGroup):
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
-        disabled: bool = False,
     ) -> DiffView:
         """Load two files from disk.
 
