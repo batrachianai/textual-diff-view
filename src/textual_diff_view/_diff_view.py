@@ -271,7 +271,7 @@ class DiffView(containers.VerticalGroup):
         " ": "$foreground 30% on $foreground 3%",
     }
     """Line number styles."""
-    ANNOTATION_STYLES = {"+": "bold $text-success", "-": "bold $text-error", " ": ""}
+    ANNOTATION_STYLES = {"+": "$text-success", "-": "$text-error", " ": ""}
     """Annotation styles (+ or -)."""
     LINE_STYLES = {
         "+": "on $success 10%",
@@ -719,6 +719,7 @@ class DiffView(containers.VerticalGroup):
                         (
                             Content(f" {self.WRAP_SYMBOL} ")
                             .stylize(LINE_STYLES[annotation])
+                            .stylize(ANNOTATION_STYLES[annotation])
                             if is_wrap
                             else Content(f" {annotation} ")
                             .stylize(LINE_STYLES[annotation])
@@ -880,8 +881,10 @@ class DiffView(containers.VerticalGroup):
                 if annotation == "/":
                     return annotation_hatch
                 if is_wrap:
-                    return Content(f" {self.WRAP_SYMBOL} ").stylize(
-                        self.LINE_STYLES.get(annotation, "")
+                    return (
+                        Content(f" {self.WRAP_SYMBOL} ")
+                        .stylize(self.LINE_STYLES.get(annotation, ""))
+                        .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
                     )
                 if annotation == highlight_annotation:
                     return (
