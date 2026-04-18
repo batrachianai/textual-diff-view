@@ -525,16 +525,13 @@ class DiffView(containers.VerticalGroup):
             split_width += 3 * 2 if self.annotations else 2
             self.split = width >= split_width
 
-    _last_wrap_width: int = 0
-
     async def watch_annotations(self) -> None:
         if self.wrap:
             await self.recompose()
 
     async def on_resize(self, event: events.Resize) -> None:
         self._check_auto_split(event.size.width)
-        if self.wrap and event.size.width != self._last_wrap_width:
-            self._last_wrap_width = event.size.width
+        if self.wrap:
             await self.recompose()
 
     async def on_mount(self) -> None:
