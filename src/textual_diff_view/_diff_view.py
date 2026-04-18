@@ -176,6 +176,9 @@ class FoldedLineContent(Visual):
         strips: list[Strip] = []
         fold_width = self._fold_width(width)
         y = 0
+        selection = options.selection
+        selection_style = options.selection_style or Style.null()
+        visual_code_lines: list[str] = []
 
         for annotate, cont, content, color, code_length in zip(
             self.annotations,
@@ -196,6 +199,7 @@ class FoldedLineContent(Visual):
                         for text, rich_style, _ in hatch.render_segments()
                     ]
                     strips.append(Strip(segments, width))
+                    visual_code_lines.append("")
                     y += 1
                 continue
 
@@ -216,7 +220,21 @@ class FoldedLineContent(Visual):
                 else:
                     ann = cont
 
-                code_w = width - ann.cell_length
+                visual_code_lines.append(part.plain)
+                ann_width = ann.cell_length
+                code_w = width - ann_width
+
+                if selection is not None:
+                    if span := selection.get_span(y):
+                        start, end = span
+                        start = max(0, start - ann_width)
+                        if end == -1:
+                            end = len(part)
+                        else:
+                            end = max(0, end - ann_width)
+                        if end > start:
+                            part = part.stylize(selection_style, start, end)
+
                 if part.cell_length < code_w:
                     part = part.pad_right(code_w - part.cell_length)
 
@@ -239,6 +257,7 @@ class FoldedLineContent(Visual):
                 strips.append(Strip(segments, combined.cell_length))
                 y += 1
 
+        self._visual_code_lines = visual_code_lines
         return strips
 
 
@@ -309,7 +328,11 @@ class DiffCode(Static):
 
     def get_selection(self, selection: Selection) -> tuple[str, str] | None:
         visual = self._render()
-        if isinstance(visual, LineContent):
+        if isinstance(visual, FoldedLineContent):
+            text = "\n".join(
+                getattr(visual, "_visual_code_lines", [])
+            )
+        elif isinstance(visual, LineContent):
             text = "\n".join(
                 "" if line is None else line.plain for line in visual.code_lines
             )
@@ -797,9 +820,9 @@ class DiffView(containers.VerticalGroup):
                     ac = (Content(f" {ann} ")
                         .stylize(LINE_STYLES[ann])
                         .stylize(ANNOTATION_STYLES[ann]))
-                    gutter_annotations.append(Content("").join([ga, gb, ac]))
                 else:
-                    gutter_annotations.append(Content("").join([ga, gb]))
+                    ac = Content(" ").stylize(LINE_STYLES[ann])
+                gutter_annotations.append(Content("").join([ga, gb, ac]))
 
                 ga_c = (Content(f"▎{' ' * numw} ")
                     .stylize(NUMBER_STYLES[ann], 1)
@@ -809,9 +832,9 @@ class DiffView(containers.VerticalGroup):
                     ac_c = (Content(f" {self.WRAP_SYMBOL} ")
                         .stylize(LINE_STYLES[ann])
                         .stylize(ANNOTATION_STYLES[ann]))
-                    gutter_continuations.append(Content("").join([ga_c, gb_c, ac_c]))
                 else:
-                    gutter_continuations.append(Content("").join([ga_c, gb_c]))
+                    ac_c = Content(" ").stylize(LINE_STYLES[ann])
+                gutter_continuations.append(Content("").join([ga_c, gb_c, ac_c]))
 
             line_styles = [LINE_STYLES[ann] for ann in ann_types]
 
@@ -872,7 +895,7 @@ class DiffView(containers.VerticalGroup):
             else:
                 numw = 1
 
-            ann_col_width = 3 if show_annotations else 0
+            ann_col_width = 3 if show_annotations else 1
             full_gutter_width = 2 + numw + ann_col_width
 
             def build_side(
@@ -904,11 +927,11 @@ class DiffView(containers.VerticalGroup):
                         ac = (Content(f" {ann} ")
                             .stylize(LINE_STYLES[ann])
                             .stylize(ANNOTATION_STYLES.get(ann, "")))
-                        gutter_anns.append(Content("").join([g, ac]))
                     elif show_annotations:
-                        gutter_anns.append(Content("").join([g, Content("   ")]))
+                        ac = Content("   ")
                     else:
-                        gutter_anns.append(g)
+                        ac = Content(" ").stylize(LINE_STYLES.get(ann, ""))
+                    gutter_anns.append(Content("").join([g, ac]))
 
                     g_c = (Content(f"▎{' ' * numw} ")
                         .stylize(NUMBER_STYLES[ann], 1)
@@ -917,9 +940,9 @@ class DiffView(containers.VerticalGroup):
                         ac_c = (Content(f" {self.WRAP_SYMBOL} ")
                             .stylize(LINE_STYLES.get(ann, ""))
                             .stylize(ANNOTATION_STYLES.get(ann, "")))
-                        gutter_conts.append(Content("").join([g_c, ac_c]))
                     else:
-                        gutter_conts.append(g_c)
+                        ac_c = Content(" ").stylize(LINE_STYLES.get(ann, ""))
+                    gutter_conts.append(Content("").join([g_c, ac_c]))
 
                 return gutter_anns, gutter_conts
 
