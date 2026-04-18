@@ -1,6 +1,6 @@
 [project]
 name = "textual-diff-view"
-version = "0.1.2"
+version = "0.1.3"
 description = "Beautiful Diff view widget for Textual applications"
 homepage = "https://github.com/batrachianai/textual-diff-view"
 repository = "https://github.com/batrachianai/textual-diff-view"
