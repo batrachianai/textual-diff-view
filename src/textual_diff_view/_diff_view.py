@@ -1090,6 +1090,8 @@ class DiffView(containers.VerticalGroup):
         """Compose split view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
+        annotation_hatch_single = Content.styled("╲", "$foreground 15%")
+        blank_space = Content.blank(1)
         annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
         annotation_blank = Content(" " * 3)
 
@@ -1107,7 +1109,7 @@ class DiffView(containers.VerticalGroup):
             """
             if not self.annotations:
                 return (
-                    Content.blank(1)
+                    (annotation_hatch_single if annotation == "/" else blank_space)
                     .stylize(self.LINE_STYLES[annotation])
                     .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
                 )
