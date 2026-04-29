@@ -16,6 +16,9 @@ dependencies = [
 ]
 exclude = ["tests/__snapshots__"]
 
+[tool.uv.sources]
+textual = { path = "../textual", editable = true }
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
