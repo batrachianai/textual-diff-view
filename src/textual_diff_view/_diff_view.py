@@ -69,10 +69,12 @@ class LineContent(Visual):
         code_lines: list[Content | None],
         line_styles: list[str],
         width: int | None = None,
+        hatch_style: Style | None = None,
     ) -> None:
         self.code_lines = code_lines
         self.line_styles = line_styles
         self._width = width
+        self._hatch_style = hatch_style
 
     def render_strips(
         self, width: int, height: int | None, style: Style, options: RenderOptions
@@ -83,7 +85,9 @@ class LineContent(Visual):
         selection_style = options.selection_style or Style.null()
         for y, (line, color) in enumerate(zip(self.code_lines, self.line_styles)):
             if line is None:
-                line = Content.styled("╲" * width, "$foreground 15%")
+                line = Content.styled(
+                    "╲" * width, "" if self._hatch_style is None else self._hatch_style
+                )
             else:
                 if selection is not None:
                     if span := selection.get_span(y):
@@ -132,12 +136,14 @@ class FoldedLineContent(Visual):
         continuations: list[Content],
         code_lines: list[Content | None],
         line_styles: list[str],
+        hatch_style: Style,
         code_lengths: list[int] | None = None,
     ) -> None:
         self.annotations = annotations
         self.continuations = continuations
         self.code_lines = code_lines
         self.line_styles = line_styles
+        self._hatch_style = hatch_style
         self.code_lengths = (
             [0 if line is None else line.cell_length for line in code_lines]
             if code_lengths is None
@@ -192,7 +198,7 @@ class FoldedLineContent(Visual):
             zip(annotations, code_lines, line_styles)
         ):
             if line is None:
-                line = Content.styled("╲" * width, "$foreground 15%")
+                line = Content.styled("╲" * width, self._hatch_style)
             else:
                 if selection is not None:
                     if span := selection.get_span(y):
@@ -340,6 +346,25 @@ def fill_lists(list_a: list[T], list_b: list[T], fill_value: T) -> None:
 class DiffView(containers.VerticalGroup):
     """A formatted diff in unified or split format."""
 
+    COMPONENT_CLASSES = {
+        "diff-view--inline-added",
+        "diff-view--inline-removed",
+        "diff-view--number-added",
+        "diff-view--number-removed",
+        "diff-view--number-unmodified",
+        "diff-view--annotation-added",
+        "diff-view--annotation-removed",
+        "diff-view--annotation-unmodified",
+        "diff-view--annotation-hatch",
+        "diff-view--line-added",
+        "diff-view--line-removed",
+        "diff-view--line-unmodified",
+        "diff-view--line-hatch",
+        "diff-view--edge-added",
+        "diff-view--edge-removed",
+        "diff-view--edge-unmodified",
+    }
+
     path_original: reactive[str] = reactive("")
     """Path for the original code."""
     path_modified: reactive[str] = reactive("")
@@ -380,34 +405,179 @@ class DiffView(containers.VerticalGroup):
             text-style:bold;
             offset-x: -1;
         }
+
+        & > .diff-view--inline-added { 
+            background: $success 30%;
+            color: transparent;
+        }
+
+        & > .diff-view--inline-removed {
+            background: $error 30%;
+            color: transparent;
+        }
+
+        & > .diff-view--number-added {
+            color: $text-success 80%;
+            background: $success 20%;
+        }
+        & > .diff-view--number-removed {
+            color: $text-error 80%;
+            background: $error 20%;            
+
+        }
+        & > .diff-view--number-unmodified {
+            color: $foreground 30%;
+            background: $foreground 3%;
+        }
+
+        & > .diff-view--annotation-added {
+            color: $text-success 95%;            
+        }
+        & > .diff-view--annotation-removed {
+            color: $text-error 95%;
+        }
+        & > .diff-view--annotation-unmodified {
+        
+        }
+        & > .diff-view--annotation-hatch {
+            color: $foreground 15%;
+        
+        }
+        
+        & > .diff-view--line-added {
+            background: $success 10%;
+        }
+
+        & > .diff-view--line-removed {
+            background: $error 10%;
+        }   
+
+        & > .diff-view--line-unmodified {
+        }
+
+        & > .diff-view--line-hatch {
+            
+        }
+
+        & > .diff-view--edge-added {
+            color: $text-success 30%;
+            background: $success 20%;
+        }
+
+        & > .diff-view--edge-removed {
+            color: $text-error 30%;
+            background: $error 20%;
+        }
+
+        & > .diff-view--edge-unmodified {
+            color: $foreground 10%;
+            background: $foreground 3%;
+        }
+
+    }
+    DiffView:ansi {
+        .title {            
+            border-bottom: dashed $ansi-foreground;
+        }
+        & > .diff-view--inline-added {  
+            background: ansi_default;           
+            
+        }
+
+        & > .diff-view--inline-removed {            
+            background: ansi_default;           
+            
+        }
+        & > .diff-view--number-added {
+            color: ansi_green;
+            background: ansi_default;
+            text-style: bold;
+        }
+        & > .diff-view--number-removed {
+            color: ansi_red;
+            background: ansi_default;
+            text-style: bold;
+        }
+        & > .diff-view--number-unmodified {
+            color: $ansi-foreground;
+            text-style: dim;
+            background: ansi_default;
+        }
+
+        & > .diff-view--annotation-added {
+            color: ansi_green;
+            background: ansi_default;
+        }
+        & > .diff-view--annotation-removed {
+            color: ansi_red;
+            background: ansi_default;
+        }
+        & > .diff-view--annotation-unmodified {
+            background: ansi_default;
+        }
+        & > .diff-view--annotation-hatch {
+            color: $ansi-foreground;            
+            text-style: dim;
+        }
+
+        & > .diff-view--line-added {
+            background: ansi_default;            
+        }
+
+        & > .diff-view--line-removed {
+            background: ansi_default;
+        }   
+
+        & > .diff-view--line-unmodified {
+            background: ansi_default;
+        }
+
+        & > .diff-view--line-hatch {
+            color: $ansi-foreground;            
+            text-style: dim;
+        }
+
+        & > .diff-view--edge-added {
+            color: ansi_green;
+            background: ansi_default;
+        }
+
+        & > .diff-view--edge-removed {
+            color: ansi_red;
+            background: ansi_default;
+        }
+
+        & > .diff-view--edge-unmodified {
+            color: $ansi-foreground;
+            text-style: dim;
+            background: ansi_default;
+        }
     }
     """
 
-    NUMBER_STYLES = {
-        "+": "$text-success 80% on $success 20%",
-        "-": "$text-error 80% on $error 20%",
-        " ": "$foreground 30% on $foreground 3%",
-    }
-    """Line number styles."""
-    ANNOTATION_STYLES = {
-        "+": "$text-success 95%",
-        "-": "$text-error 95%",
-        " ": "",
-    }
-    """Annotation styles (+ or -)."""
-    LINE_STYLES = {
-        "+": "on $success 10%",
-        "-": "on $error 10%",
-        " ": "",
-        "/": "",
-    }
-    """Base style for lines."""
-    EDGE_STYLES = {
-        "+": "$text-success 30% on $success 20%",
-        "-": "$text-error 30% on $error 20%",
-        " ": "$foreground 10% on $foreground 3%",
-    }
-    """Style for edge of numbers,"""
+    @property
+    def number_styles(self) -> Mapping[str, Style]:
+        if not self._number_styles:
+            self._update_styles()
+        return self._number_styles
+
+    @property
+    def annotation_styles(self) -> Mapping[str, Style]:
+        if not self._annotation_styles:
+            self._update_styles()
+        return self._annotation_styles
+
+    @property
+    def line_styles(self) -> Mapping[str, Style]:
+        if not self._line_styles:
+            self._update_styles()
+        return self._line_styles
+
+    @property
+    def edge_styles(self) -> Mapping[str, Style]:
+        if not self._edge_styles:
+            self._update_styles()
+        return self._edge_styles
 
     def __init__(
         self,
@@ -452,6 +622,11 @@ class DiffView(containers.VerticalGroup):
 
         self._grouped_opcodes: list[list[tuple[str, int, int, int, int]]] | None = None
         self._highlighted_code_lines: tuple[list[Content], list[Content]] | None = None
+
+        self._number_styles: dict[str, Style] = {}
+        self._annotation_styles: dict[str, Style] = {}
+        self._line_styles: dict[str, Style] = {}
+        self._edge_styles: dict[str, Style] = {}
 
     @classmethod
     async def load(
@@ -524,6 +699,42 @@ class DiffView(containers.VerticalGroup):
         await diff_view.prepare()
         return diff_view
 
+    def notify_style_update(self) -> None:
+        super().notify_style_update()
+        self._highlighted_code_lines = None
+        self._number_styles.clear()
+        self._annotation_styles.clear()
+        self._line_styles.clear()
+        self._edge_styles.clear()
+        self.refresh(recompose=True)
+
+    def _update_styles(self) -> None:
+        self._number_styles = {
+            "+": self.get_visual_style("diff-view--number-added", partial=True),
+            "-": self.get_visual_style("diff-view--number-removed", partial=True),
+            " ": self.get_visual_style("diff-view--number-unmodified", partial=True),
+        }
+        self._annotation_styles = {
+            "+": self.get_visual_style("diff-view--annotation-added", partial=True),
+            "-": self.get_visual_style("diff-view--annotation-removed", partial=True),
+            " ": self.get_visual_style(
+                "diff-view--annotation-unmodified", partial=True
+            ),
+            "/": self.get_visual_style("diff-view--annotation-hatch", partial=True),
+        }
+
+        self._line_styles = {
+            "+": self.get_visual_style("diff-view--line-added", partial=True),
+            "-": self.get_visual_style("diff-view--line-removed", partial=True),
+            " ": self.get_visual_style("diff-view--line-unmodified", partial=True),
+            "/": self.get_visual_style("diff-view--line-hatch", partial=True),
+        }
+        self._edge_styles = {
+            "+": self.get_visual_style("diff-view--edge-added", partial=True),
+            "-": self.get_visual_style("diff-view--edge-removed", partial=True),
+            " ": self.get_visual_style("diff-view--edge-unmodified", partial=True),
+        }
+
     async def prepare(self) -> None:
         """Do CPU work in a thread.
 
@@ -536,7 +747,6 @@ class DiffView(containers.VerticalGroup):
         def prepare() -> None:
             """Call properties which will lazily update data structures."""
             self.grouped_opcodes
-            self.highlighted_code_lines
 
         await asyncio.to_thread(prepare)
 
@@ -573,7 +783,11 @@ class DiffView(containers.VerticalGroup):
 
     @classmethod
     def _highlight_diff_lines(
-        cls, lines_a: list[Content], lines_b: list[Content]
+        cls,
+        lines_a: list[Content],
+        lines_b: list[Content],
+        added_style: Style,
+        removed_style: Style,
     ) -> tuple[list[Content], list[Content]]:
         """Diff two groups of lines.
 
@@ -596,12 +810,28 @@ class DiffView(containers.VerticalGroup):
         spans_b: list[Span] = []
         for tag, i1, i2, j1, j2 in sequence_matcher.get_opcodes():
             if tag in {"delete", "replace"}:
-                spans_a.append(Span(i1, i2, "on $error 30%"))
+                spans_a.append(Span(i1, i2, removed_style))
             if tag in {"insert", "replace"}:
-                spans_b.append(Span(j1, j2, "on $success 30%"))
+                spans_b.append(Span(j1, j2, added_style))
         diffed_lines_a = code_a.add_spans(spans_a).split("\n")
         diffed_lines_b = code_b.add_spans(spans_b).split("\n")
         return diffed_lines_a, diffed_lines_b
+
+    @classmethod
+    def highlight(
+        cls, code: str, path: str, language: str, ansi: bool = False, dark: bool = False
+    ) -> Content:
+        if ansi:
+            if dark:
+                from textual.highlight import ANSIDarkHighlightTheme as HighlightTheme
+            else:
+                from textual.highlight import ANSILightHighlightTheme as HighlightTheme
+        else:
+            from textual.highlight import HighlightTheme
+
+        return highlight.highlight(
+            code, path=path, language=language or None, theme=HighlightTheme
+        )
 
     @property
     def highlighted_code_lines(self) -> tuple[list[Content], list[Content]]:
@@ -611,17 +841,35 @@ class DiffView(containers.VerticalGroup):
             A pair of line lists for `code_before` and `code_after`
         """
 
+        added_style = self.get_visual_style(
+            "diff-view--inline-added",
+        )
+        removed_style = self.get_visual_style(
+            "diff-view--inline-removed",
+        )
+
         if self._highlighted_code_lines is None:
             language1 = highlight.guess_language(self.code_original, self.path_original)
             language2 = highlight.guess_language(self.code_modified, self.path_modified)
             text_lines_a = self.code_original.splitlines()
             text_lines_b = self.code_modified.splitlines()
 
-            code_a = highlight.highlight(
-                "\n".join(text_lines_a), language=language1, path=self.path_original
+            ansi = getattr(self.app.current_theme, "ansi", False)
+            dark = self.app.current_theme.dark
+
+            code_a = self.highlight(
+                "\n".join(text_lines_a),
+                language=language1,
+                path=self.path_original,
+                ansi=ansi,
+                dark=dark,
             )
-            code_b = highlight.highlight(
-                "\n".join(text_lines_b), language=language2, path=self.path_modified
+            code_b = self.highlight(
+                "\n".join(text_lines_b),
+                language=language2,
+                path=self.path_modified,
+                ansi=ansi,
+                dark=dark,
             )
 
             lines_a = code_a.split("\n")
@@ -634,7 +882,10 @@ class DiffView(containers.VerticalGroup):
                         # Otherwise you get noisy diffs that don't make a great deal of sense
                         if tag == "replace" and (j2 - j1) == (i2 - i1):
                             diff_lines_a, diff_lines_b = self._highlight_diff_lines(
-                                lines_a[i1:i2], lines_b[j1:j2]
+                                lines_a[i1:i2],
+                                lines_b[j1:j2],
+                                added_style,
+                                removed_style,
                             )
                             lines_a[i1:i2] = diff_lines_a
                             lines_b[j1:j2] = diff_lines_b
@@ -704,6 +955,7 @@ class DiffView(containers.VerticalGroup):
         """Compose unified view (no wrapping)."""
         lines_a, lines_b = self.highlighted_code_lines
 
+        hatch_style = self.annotation_styles["/"]
         for last, group in loop_last(self.grouped_opcodes):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
@@ -730,10 +982,10 @@ class DiffView(containers.VerticalGroup):
                         line_numbers_b.append(j1 + line_offset)
                         code_lines.append(line)
 
-            NUMBER_STYLES = self.NUMBER_STYLES
-            LINE_STYLES = self.LINE_STYLES
-            EDGE_STYLES = self.EDGE_STYLES
-            ANNOTATION_STYLES = self.ANNOTATION_STYLES
+            NUMBER_STYLES = self.number_styles
+            LINE_STYLES = self.line_styles
+            EDGE_STYLES = self.edge_styles
+            ANNOTATION_STYLES = self.annotation_styles
 
             line_number_width = max(
                 len("" if line_no is None else str(line_no))
@@ -788,7 +1040,11 @@ class DiffView(containers.VerticalGroup):
                     LINE_STYLES[annotation] for annotation in annotations
                 ]
                 with DiffScrollContainer():
-                    yield DiffCode(LineContent(code_lines, code_line_styles))
+                    yield DiffCode(
+                        LineContent(
+                            code_lines, code_line_styles, hatch_style=hatch_style
+                        )
+                    )
 
             if not last:
                 yield Ellipsis("⋮")
@@ -804,33 +1060,33 @@ class DiffView(containers.VerticalGroup):
         """
 
         blank_continuation = Content.styled(f"▎{' ' * (width - 2)} ")
-        add_continuation = blank_continuation.stylize(self.EDGE_STYLES["+"])
-        remove_continuation = blank_continuation.stylize(self.EDGE_STYLES["-"])
-        blank_continuation = blank_continuation.stylize(self.EDGE_STYLES[" "])
+        add_continuation = blank_continuation.stylize(self.edge_styles["+"])
+        remove_continuation = blank_continuation.stylize(self.edge_styles["-"])
+        blank_continuation = blank_continuation.stylize(self.edge_styles[" "])
 
         if self.annotations:
             add_continuation = add_continuation.append(
-                Content.styled(" ↪ ", self.LINE_STYLES["+"]).stylize(
-                    self.ANNOTATION_STYLES["+"]
+                Content.styled(" ↪ ", self.line_styles["+"]).stylize(
+                    self.annotation_styles["+"]
                 )
             )
             remove_continuation = remove_continuation.append(
-                Content.styled(" ↪ ", self.LINE_STYLES["-"]).stylize(
-                    self.ANNOTATION_STYLES["-"]
+                Content.styled(" ↪ ", self.line_styles["-"]).stylize(
+                    self.annotation_styles["-"]
                 )
             )
             blank_continuation = blank_continuation.append(
-                Content.styled(" ↪ ", self.LINE_STYLES[" "])
+                Content.styled(" ↪ ", self.line_styles[" "])
             ).stylize("dim")
         else:
             add_continuation = add_continuation.append(
-                Content.blank(1, self.LINE_STYLES["+"])
+                Content.blank(1, self.line_styles["+"])
             )
             remove_continuation = remove_continuation.append(
-                Content.blank(1, self.LINE_STYLES["-"])
+                Content.blank(1, self.line_styles["-"])
             )
             blank_continuation = blank_continuation.append(
-                Content.blank(1, self.LINE_STYLES[" "])
+                Content.blank(1, self.line_styles[" "])
             )
 
         continuations = {
@@ -845,6 +1101,7 @@ class DiffView(containers.VerticalGroup):
         """Compose unified view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
+        hatch_style = self.annotation_styles["/"]
         for last, group in loop_last(self.grouped_opcodes):
             line_numbers_a: list[int | None] = []
             line_numbers_b: list[int | None] = []
@@ -871,10 +1128,10 @@ class DiffView(containers.VerticalGroup):
                         line_numbers_b.append(j1 + line_offset)
                         code_lines.append(line)
 
-            NUMBER_STYLES = self.NUMBER_STYLES
-            LINE_STYLES = self.LINE_STYLES
-            EDGE_STYLES = self.EDGE_STYLES
-            ANNOTATION_STYLES = self.ANNOTATION_STYLES
+            NUMBER_STYLES = self.number_styles
+            LINE_STYLES = self.line_styles
+            EDGE_STYLES = self.edge_styles
+            ANNOTATION_STYLES = self.annotation_styles
 
             line_number_width = max(
                 len("" if line_no is None else str(line_no))
@@ -931,6 +1188,7 @@ class DiffView(containers.VerticalGroup):
                             ],
                             code_lines,
                             code_line_styles,
+                            hatch_style,
                         )
                     )
 
@@ -949,8 +1207,14 @@ class DiffView(containers.VerticalGroup):
         """Compose the split view (no wrapping)."""
         lines_a, lines_b = self.highlighted_code_lines
 
-        annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
+        hatch_style = self.annotation_styles["/"]
+        annotation_hatch = Content.styled("╲" * 3, hatch_style)
         annotation_blank = Content(" " * 3)
+
+        NUMBER_STYLES = self.number_styles
+        LINE_STYLES = self.line_styles
+        EDGE_STYLES = self.edge_styles
+        ANNOTATION_STYLES = self.annotation_styles
 
         def make_annotation(
             annotation: Annotation, highlight_annotation: Literal["+", "-"]
@@ -965,12 +1229,15 @@ class DiffView(containers.VerticalGroup):
                 Content with annotation.
             """
             if not self.annotations:
-                return Content(" ").stylize(self.LINE_STYLES[annotation])
+                if annotation == "/":
+                    return Content("╲").stylize(hatch_style)
+                else:
+                    return Content(" ").stylize(LINE_STYLES[annotation])
             if annotation == highlight_annotation:
                 return (
                     Content(f" {annotation} ")
-                    .stylize(self.LINE_STYLES[annotation])
-                    .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
+                    .stylize(LINE_STYLES[annotation])
+                    .stylize(ANNOTATION_STYLES.get(annotation, ""))
                 )
             if annotation == "/":
                 return annotation_hatch
@@ -1015,7 +1282,7 @@ class DiffView(containers.VerticalGroup):
             else:
                 line_number_width = 1
 
-            hatch = Content.styled("╲" * (2 + line_number_width), "$foreground 15%")
+            hatch = Content.styled("╲" * (2 + line_number_width), hatch_style)
 
             def format_number(line_no: int | None, annotation: str) -> Content:
                 """Format a line number with an annotation.
@@ -1031,8 +1298,8 @@ class DiffView(containers.VerticalGroup):
                     hatch
                     if line_no is None
                     else Content(f"▎{line_no:>{line_number_width}} ")
-                    .stylize(self.NUMBER_STYLES[annotation], 1)
-                    .stylize(self.EDGE_STYLES[annotation], 0, 1)
+                    .stylize(NUMBER_STYLES[annotation], 1)
+                    .stylize(EDGE_STYLES[annotation], 0, 1)
                 )
 
             with containers.HorizontalGroup(classes="diff-group"):
@@ -1046,7 +1313,7 @@ class DiffView(containers.VerticalGroup):
                 )
 
                 code_line_styles = [
-                    self.LINE_STYLES[annotation] for annotation in annotations_a
+                    LINE_STYLES[annotation] for annotation in annotations_a
                 ]
                 line_width = max(
                     line.cell_length
@@ -1056,7 +1323,12 @@ class DiffView(containers.VerticalGroup):
                 # Before code
                 with DiffScrollContainer() as scroll_container_a:
                     yield DiffCode(
-                        LineContent(code_lines_a, code_line_styles, width=line_width)
+                        LineContent(
+                            code_lines_a,
+                            code_line_styles,
+                            width=line_width,
+                            hatch_style=hatch_style,
+                        )
                     )
 
                 # After line numbers
@@ -1069,12 +1341,17 @@ class DiffView(containers.VerticalGroup):
                 )
 
                 code_line_styles = [
-                    self.LINE_STYLES[annotation] for annotation in annotations_b
+                    LINE_STYLES[annotation] for annotation in annotations_b
                 ]
                 # After code
                 with DiffScrollContainer() as scroll_container_b:
                     yield DiffCode(
-                        LineContent(code_lines_b, code_line_styles, width=line_width)
+                        LineContent(
+                            code_lines_b,
+                            code_line_styles,
+                            width=line_width,
+                            hatch_style=hatch_style,
+                        )
                     )
 
                 # Link scroll containers, so they scroll together
@@ -1090,10 +1367,17 @@ class DiffView(containers.VerticalGroup):
         """Compose split view with wrapping."""
         lines_a, lines_b = self.highlighted_code_lines
 
-        annotation_hatch_single = Content.styled("╲", "$foreground 15%")
+        hatch_style = self.annotation_styles["/"]
+
+        annotation_hatch_single = Content.styled("╲", hatch_style)
         blank_space = Content.blank(1)
-        annotation_hatch = Content.styled("╲" * 3, "$foreground 15%")
+        annotation_hatch = Content.styled("╲" * 3, hatch_style)
         annotation_blank = Content(" " * 3)
+
+        NUMBER_STYLES = self.number_styles
+        LINE_STYLES = self.line_styles
+        EDGE_STYLES = self.edge_styles
+        ANNOTATION_STYLES = self.annotation_styles
 
         def make_annotation(
             annotation: Annotation, highlight_annotation: Literal["+", "-"]
@@ -1110,14 +1394,14 @@ class DiffView(containers.VerticalGroup):
             if not self.annotations:
                 return (
                     (annotation_hatch_single if annotation == "/" else blank_space)
-                    .stylize(self.LINE_STYLES[annotation])
-                    .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
+                    .stylize(LINE_STYLES[annotation])
+                    .stylize(ANNOTATION_STYLES.get(annotation, ""))
                 )
             if annotation == highlight_annotation:
                 return (
                     Content(f" {annotation} ")
-                    .stylize(self.LINE_STYLES[annotation])
-                    .stylize(self.ANNOTATION_STYLES.get(annotation, ""))
+                    .stylize(LINE_STYLES[annotation])
+                    .stylize(ANNOTATION_STYLES.get(annotation, ""))
                 )
             if annotation == "/":
                 return annotation_hatch
@@ -1162,7 +1446,7 @@ class DiffView(containers.VerticalGroup):
             else:
                 line_number_width = 1
 
-            hatch = Content.styled("╲" * (2 + line_number_width), "$foreground 15%")
+            hatch = Content.styled("╲" * (2 + line_number_width), hatch_style)
 
             def format_number(line_no: int | None, annotation: str) -> Content:
                 """Format a line number with an annotation.
@@ -1178,8 +1462,8 @@ class DiffView(containers.VerticalGroup):
                     hatch
                     if line_no is None
                     else Content(f"▎{line_no:>{line_number_width}} ")
-                    .stylize(self.NUMBER_STYLES[annotation], 1)
-                    .stylize(self.EDGE_STYLES[annotation], 0, 1)
+                    .stylize(NUMBER_STYLES[annotation], 1)
+                    .stylize(EDGE_STYLES[annotation], 0, 1)
                 )
 
             code_lengths = [
@@ -1200,7 +1484,7 @@ class DiffView(containers.VerticalGroup):
                 ]
                 continuations = self._make_continuations(line_number_width + 2)
                 code_line_styles = [
-                    self.LINE_STYLES[annotation] for annotation in annotations_a
+                    LINE_STYLES[annotation] for annotation in annotations_a
                 ]
 
                 # Before code
@@ -1211,6 +1495,7 @@ class DiffView(containers.VerticalGroup):
                             [(continuations[annotate]) for annotate in annotations_a],
                             code_lines_a,
                             code_line_styles,
+                            hatch_style,
                             code_lengths=code_lengths,
                         )
                     )
@@ -1224,7 +1509,7 @@ class DiffView(containers.VerticalGroup):
                 ]
 
                 code_line_styles = [
-                    self.LINE_STYLES[annotation] for annotation in annotations_b
+                    LINE_STYLES[annotation] for annotation in annotations_b
                 ]
 
                 # Before code
@@ -1235,6 +1520,7 @@ class DiffView(containers.VerticalGroup):
                             [(continuations[annotate]) for annotate in annotations_b],
                             code_lines_b,
                             code_line_styles,
+                            hatch_style,
                             code_lengths=code_lengths,
                         )
                     )
