@@ -347,6 +347,8 @@ class DiffView(containers.VerticalGroup):
     """A formatted diff in unified or split format."""
 
     COMPONENT_CLASSES = {
+        "diff-view--inline-added",
+        "diff-view--inline-removed",
         "diff-view--number-added",
         "diff-view--number-removed",
         "diff-view--number-unmodified",
@@ -403,6 +405,17 @@ class DiffView(containers.VerticalGroup):
             text-style:bold;
             offset-x: -1;
         }
+
+        & > .diff-view--inline-added { 
+            background: $success 30%;
+            color: transparent;
+        }
+
+        & > .diff-view--inline-removed {
+            background: $error 30%;
+            color: transparent;
+        }
+
         & > .diff-view--number-added {
             color: $text-success 80%;
             background: $success 20%;
@@ -466,6 +479,15 @@ class DiffView(containers.VerticalGroup):
         .title {            
             border-bottom: dashed $ansi-foreground;
         }
+        & > .diff-view--inline-added {  
+            background: ansi_default;           
+            
+        }
+
+        & > .diff-view--inline-removed {            
+            background: ansi_default;           
+            
+        }
         & > .diff-view--number-added {
             color: ansi_green;
             background: ansi_default;
@@ -499,7 +521,7 @@ class DiffView(containers.VerticalGroup):
         }
 
         & > .diff-view--line-added {
-            background: ansi_default;
+            background: ansi_default;            
         }
 
         & > .diff-view--line-removed {
@@ -511,7 +533,7 @@ class DiffView(containers.VerticalGroup):
         }
 
         & > .diff-view--line-hatch {
-            color: ansi_default;
+            color: $ansi-foreground;            
             text-style: dim;
         }
 
@@ -725,7 +747,6 @@ class DiffView(containers.VerticalGroup):
         def prepare() -> None:
             """Call properties which will lazily update data structures."""
             self.grouped_opcodes
-            self.highlighted_code_lines
 
         await asyncio.to_thread(prepare)
 
@@ -762,7 +783,11 @@ class DiffView(containers.VerticalGroup):
 
     @classmethod
     def _highlight_diff_lines(
-        cls, lines_a: list[Content], lines_b: list[Content]
+        cls,
+        lines_a: list[Content],
+        lines_b: list[Content],
+        added_style: Style,
+        removed_style: Style,
     ) -> tuple[list[Content], list[Content]]:
         """Diff two groups of lines.
 
@@ -785,9 +810,9 @@ class DiffView(containers.VerticalGroup):
         spans_b: list[Span] = []
         for tag, i1, i2, j1, j2 in sequence_matcher.get_opcodes():
             if tag in {"delete", "replace"}:
-                spans_a.append(Span(i1, i2, "on $error 30%"))
+                spans_a.append(Span(i1, i2, removed_style))
             if tag in {"insert", "replace"}:
-                spans_b.append(Span(j1, j2, "on $success 30%"))
+                spans_b.append(Span(j1, j2, added_style))
         diffed_lines_a = code_a.add_spans(spans_a).split("\n")
         diffed_lines_b = code_b.add_spans(spans_b).split("\n")
         return diffed_lines_a, diffed_lines_b
@@ -801,7 +826,6 @@ class DiffView(containers.VerticalGroup):
                 from textual.highlight import ANSIDarkHighlightTheme as HighlightTheme
             else:
                 from textual.highlight import ANSILightHighlightTheme as HighlightTheme
-
         else:
             from textual.highlight import HighlightTheme
 
@@ -817,13 +841,20 @@ class DiffView(containers.VerticalGroup):
             A pair of line lists for `code_before` and `code_after`
         """
 
+        added_style = self.get_visual_style(
+            "diff-view--inline-added",
+        )
+        removed_style = self.get_visual_style(
+            "diff-view--inline-removed",
+        )
+
         if self._highlighted_code_lines is None:
             language1 = highlight.guess_language(self.code_original, self.path_original)
             language2 = highlight.guess_language(self.code_modified, self.path_modified)
             text_lines_a = self.code_original.splitlines()
             text_lines_b = self.code_modified.splitlines()
 
-            ansi = self.app.current_theme.ansi
+            ansi = getattr(self.app.current_theme, "ansi", False)
             dark = self.app.current_theme.dark
 
             code_a = self.highlight(
@@ -851,7 +882,10 @@ class DiffView(containers.VerticalGroup):
                         # Otherwise you get noisy diffs that don't make a great deal of sense
                         if tag == "replace" and (j2 - j1) == (i2 - i1):
                             diff_lines_a, diff_lines_b = self._highlight_diff_lines(
-                                lines_a[i1:i2], lines_b[j1:j2]
+                                lines_a[i1:i2],
+                                lines_b[j1:j2],
+                                added_style,
+                                removed_style,
                             )
                             lines_a[i1:i2] = diff_lines_a
                             lines_b[j1:j2] = diff_lines_b
@@ -1195,7 +1229,10 @@ class DiffView(containers.VerticalGroup):
                 Content with annotation.
             """
             if not self.annotations:
-                return Content(" ").stylize(LINE_STYLES[annotation])
+                if annotation == "/":
+                    return Content("╲").stylize(hatch_style)
+                else:
+                    return Content(" ").stylize(LINE_STYLES[annotation])
             if annotation == highlight_annotation:
                 return (
                     Content(f" {annotation} ")
