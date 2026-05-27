@@ -11,6 +11,7 @@ from typing import Iterable, Literal, Mapping, TypeAlias, TypeVar
 
 from rich.segment import Segment
 from rich.style import Style as RichStyle
+from rich.terminal_theme import TerminalTheme
 
 from textual.app import ComposeResult
 from textual.content import Content, Span
@@ -18,6 +19,7 @@ from textual.geometry import Size
 from textual import highlight
 from textual import events
 
+from textual.color import Color
 from textual.css.styles import RulesMap
 from textual.selection import Selection
 from textual.strip import Strip
@@ -382,11 +384,13 @@ class DiffView(containers.VerticalGroup):
     """Automaticallly enable split view if there is enough space?"""
     wrap: reactive[bool] = reactive(False, recompose=True)
     """Wrap long lines (rather than horizontal scroll)."""
+    terminal_theme: reactive[TerminalTheme | None] = reactive(None, recompose=True)
+    """System terminal theme, used in ANSI themes if supplied."""
 
     DEFAULT_CSS = """
     DiffView {
         width: 1fr;
-        height: auto;
+        height: auto;   
         .diff-group {
             height: auto;
             background: $foreground 4%;            
@@ -515,10 +519,19 @@ class DiffView(containers.VerticalGroup):
         & > .diff-view--annotation-unmodified {
             background: ansi_default;
         }
-        & > .diff-view--annotation-hatch {
-            color: $ansi-foreground;            
-            text-style: dim;
+        &:dark {
+            & > .diff-view--annotation-hatch {
+                color: ansi_bright_black;
+                text-style: dim;                        
+            }
         }
+        &:light {
+            & > .diff-view--annotation-hatch {
+                color: ansi_bright_white;  
+                text-style: dim;                                 
+            }
+        }   
+        
 
         & > .diff-view--line-added {
             background: ansi_default;            
@@ -532,9 +545,17 @@ class DiffView(containers.VerticalGroup):
             background: ansi_default;
         }
 
-        & > .diff-view--line-hatch {
-            color: $ansi-foreground;            
-            text-style: dim;
+        &:dark {
+            & > .diff-view--line-hatch {
+                color: ansi_bright_black;     
+                text-style: dim;                              
+            }
+        }
+        &:light {
+            & > .diff-view--line-hatch {
+                color: ansi_bright_white;   
+                text-style: dim;                                
+            }
         }
 
         & > .diff-view--edge-added {
@@ -593,6 +614,7 @@ class DiffView(containers.VerticalGroup):
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
+        terminal_theme: TerminalTheme | None = None,
     ):
         """Initialize diff view.
 
@@ -619,6 +641,7 @@ class DiffView(containers.VerticalGroup):
         self.set_reactive(DiffView.annotations, annotations)
         self.set_reactive(DiffView.auto_split, auto_split)
         self.set_reactive(DiffView.wrap, wrap)
+        self.set_reactive(DiffView.terminal_theme, terminal_theme)
 
         self._grouped_opcodes: list[list[tuple[str, int, int, int, int]]] | None = None
         self._highlighted_code_lines: tuple[list[Content], list[Content]] | None = None
@@ -734,6 +757,30 @@ class DiffView(containers.VerticalGroup):
             "-": self.get_visual_style("diff-view--edge-removed", partial=True),
             " ": self.get_visual_style("diff-view--edge-unmodified", partial=True),
         }
+        if self.app.native_ansi_color and self.terminal_theme is not None:
+            terminal_theme = self.terminal_theme
+            background = Color(*terminal_theme.background_color)
+            red = Color(*terminal_theme.ansi_colors[2])
+            green = Color(*terminal_theme.ansi_colors[1])
+
+            added = background + red.with_alpha(0.15)
+            removed = background + green.with_alpha(0.15)
+
+            number_styles = self._number_styles
+            number_styles["+"] = number_styles["+"].with_background(added)
+            number_styles["-"] = number_styles["-"].with_background(removed)
+
+            annotation_styles = self._annotation_styles
+            annotation_styles["+"] = annotation_styles["+"].with_background(added)
+            annotation_styles["-"] = annotation_styles["-"].with_background(removed)
+
+            line_styles = self._line_styles
+            line_styles["+"] = line_styles["+"].with_background(added)
+            line_styles["-"] = line_styles["-"].with_background(removed)
+
+            edge_styles = self._edge_styles
+            edge_styles["+"] = edge_styles["+"].with_background(added)
+            edge_styles["-"] = edge_styles["-"].with_background(removed)
 
     async def prepare(self) -> None:
         """Do CPU work in a thread.
@@ -915,6 +962,10 @@ class DiffView(containers.VerticalGroup):
 
     def compose(self) -> ComposeResult:
         """Compose either split or unified view."""
+        self._number_styles.clear()
+        self._annotation_styles.clear()
+        self._line_styles.clear()
+        self._edge_styles.clear()
         yield Static(self.get_title(), classes="title")
         if self.split:
             yield from self.compose_split()

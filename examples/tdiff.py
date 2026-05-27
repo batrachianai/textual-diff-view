@@ -1,5 +1,9 @@
+from rich.terminal_theme import TerminalTheme
+
+from textual import on
 from textual.app import App, ComposeResult
 from textual import containers
+from textual import messages
 from textual.reactive import var
 from textual import widgets
 
@@ -22,11 +26,16 @@ class DiffApp(App):
     def __init__(self, original: str, modified: str) -> None:
         self.original = original
         self.modified = modified
+        self._terminal_theme: TerminalTheme | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
         yield containers.VerticalScroll(id="diff-container")
         yield widgets.Footer()
+
+    @on(messages.TerminalThemeReport)
+    def on_terminal_theme_report(self, event: messages.TerminalThemeReport) -> None:
+        self.query_one(DiffView).terminal_theme = event.theme
 
     async def on_mount(self) -> None:
         try:
